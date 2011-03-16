@@ -20,11 +20,11 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 {dict: "this is a test",
                  words: ['this', 'is', 'a', 'test'],
                  nonWords: ['t', 'te', 'tes'],
-                 nodeCount: 2},
+                 nodeCount: 1},
                 {dict: "them the",
                  words: ['them', 'the'],
                  nonWords: ['th', 'there'],
-                 nodeCount: 2}
+                 nodeCount: 4}
             ];
             for (i = 0; i < tests.length; i++) {
                 var test = tests[i];
