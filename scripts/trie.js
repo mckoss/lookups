@@ -7,7 +7,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
     Trie.methods({
         addWords: function(words) {
-            if (typeof(words) == 'string') {
+            if (typeof words == 'string') {
                 words = words.split(/\s+/);
             }
             for (var i = 0; i < words.length; i++) {
@@ -27,9 +27,9 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                 var next;
 
                 next = {};
-                node[prefix.slice(0, 1)] = next;
-                this.insertString(prefix.slice(1), next);
-                this.insertString(word.slice(1), next);
+                node[prefix] = next;
+                this.insertString('', next);
+                this.insertString(word.slice(prefix.length), next);
             }
 
             if (word == '') {
@@ -45,8 +45,8 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                     continue;
                 }
                 next = node[prefix];
-                if (typeof(next) == 'object') {
-                    this.insertString(word.slice(1), next);
+                if (typeof next == 'object') {
+                    this.insertString(word.slice(prefix.length), next);
                     return;
                 }
                 delete node[prefix];
@@ -56,17 +56,20 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
             // Find words that contain word as a prefix
             for (prop in node) {
-                if (node.hasOwnProperty(prop) && typeof(node[prop]) == 'number') {
+                if (node.hasOwnProperty(prop)) {
                     if (word != prop.slice(0, word.length)) {
                         continue;
                     }
+                    // Insert an intermediate node
+                    next = {'': 1};
+                    node[word] = next;
+                    next[prop.slice(word.length)] = node[prop];
                     delete node[prop];
-                    split.call(this, word, prop);
                     return;
                 }
             }
 
-            // No shared suffix.  Enter the word here as a boolean property.
+            // No shared prefix.  Enter the word here as an scalar property.
             node[word] = 1;
         },
 
@@ -80,11 +83,21 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             if (word.length == 0) {
                 return !!node[''];
             }
+
             if (node[word] === 1) {
                 return true;
             }
-            ch = word.slice(0, 1);
-            return node[ch] && this.isFragment(word.slice(1), node[ch]);
+
+            // Find a prefix of word
+            for (var prop in node) {
+                if (node.hasOwnProperty(prop) &&
+                    prop == word.slice(0, prop.length) &&
+                    typeof node[prop] == 'object') {
+                    return this.isFragment(word.slice(prop.length), node[prop]);
+                }
+            }
+
+            return false;
         }
     });
 

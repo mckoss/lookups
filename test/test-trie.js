@@ -24,7 +24,15 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 {dict: "them the",
                  words: ['them', 'the'],
                  nonWords: ['th', 'there'],
-                 nodeCount: 4}
+                 nodeCount: 2},
+                {dict: "the them th",
+                 words: ['the', 'them', 'th'],
+                 nonWords: ['t', 'they'],
+                 nodeCount: 3},
+                {dict: "the them they themselves",
+                 words: ['the', 'them', 'they', 'themselves'],
+                 nonWords: ['thems'],
+                 nodeCount: 3}
             ];
             for (i = 0; i < tests.length; i++) {
                 var test = tests[i];

@@ -9,7 +9,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     var doc;                            // Bound elements here
 
     function handleAppCache() {
-        if (applicationCache == undefined) {
+        if (typeof applicationCache == 'undefined') {
             return;
         }
 
