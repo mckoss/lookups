@@ -3,8 +3,8 @@ client-side JavaScript.
 
 See:
 
-http://lookups.pageforest.com
+[http://lookups.pageforest.com]
 
 Unit Tests:
 
-http://lookups.pageforest.com/test/test-runner.html
+[http://lookups.pageforest.com/test/test-runner.html]
