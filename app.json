@@ -1,0 +1,28 @@
+{
+  "application": "lookups",
+  "cloneable": true,
+  "created": {
+    "__class__": "Date",
+    "isoformat": "2011-03-16T02:16:47.635255Z"
+  },
+  "icon": "images/icon.png",
+  "modified": {
+    "__class__": "Date",
+    "isoformat": "2011-03-16T05:21:47.543517Z"
+  },
+  "owner": "mckoss",
+  "readers": [
+    "public"
+  ],
+  "referers": [],
+  "secureData": false,
+  "sha1": "a3f2220d7c1a9172f4aee63deafde9a281aa321c",
+  "size": 283,
+  "tags": [
+    "demo",
+    "sample"
+  ],
+  "title": "JavaScript Lookups",
+  "url": "http://lookups.pageforest.com/",
+  "writers": []
+}
