@@ -33,8 +33,8 @@ span.menu-bar {
     text-align: right;
 }
 
-#output { width: 48%; float: right; }
-#dictionary { width: 48%; float: left; margin: 0; }
+#left { width: 48%; float: left; margin: 0; }
+#right { width: 48%; float: right; }
 
 textarea {
     font-family: "Courier New", Courier, monospace;
