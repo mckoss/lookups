@@ -24,16 +24,26 @@
     <h1 id="page-heading">
       <span id="title">JavaScript Lookups</span>
       <span class="menu-bar">
+        <button id="load">Load Dictionary</button>
         <button id="build">Build Trie</button>
       </span>
     </h1>
 
     <div id="left">
+      <p>Enter your dictionary words here:</p>
       <textarea id="dictionary"></textarea>
     </div>
 
     <div id="right">
+      <p>A Trie for your dictionary.</p>
       <textarea id="output"></textarea>
+      <p id="size"></p>
+    </div>
+
+    <div>
+      <input id="word"/>
+      <button id="test">Check Word</button>
+      <p id="result"></p>
     </div>
 
     <div id="footer">
