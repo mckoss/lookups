@@ -1,10 +1,7 @@
 Exploration of different dictionary lookup techniques for
 client-side JavaScript.
 
-See:
+See also the [Home Page] and [Unit Tests].
 
-[http://lookups.pageforest.com]
-
-Unit Tests:
-
-[http://lookups.pageforest.com/test/test-runner.html]
+  [Home Page]: http://lookups.pageforest.com
+  [Unit Tests]: http://lookups.pageforest.com/test/test-runner.html
