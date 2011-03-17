@@ -5,6 +5,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     var trieLib = namespace.lookup('org.startpad.trie');
     var client;
     var trie;
+    var compact;
 
     var doc;                            // Bound elements here
 
@@ -25,7 +26,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     function onBuild() {
         var dict = $(doc.dictionary).val();
         trie = new trieLib.Trie(dict);
-        var compact = JSON.stringify(trie.root);
+        compact = JSON.stringify(trie.root);
         $(doc.output).text(JSON.stringify(trie.root, undefined, 2));
         $(doc.size).text("Trie JSON length = " + format.thousands(compact.length) +
                          " (dictionary length: " + format.thousands(dict.length) + ")");
@@ -48,6 +49,18 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
         });
     }
 
+    function getDoc() {
+        return {
+            blob: {version: 1},
+            readers: ['public']
+        };
+    }
+
+    function onSaveSuccess(result) {
+        client.storage.putBlob(result.docid, 'trie', compact);
+        $(doc.link).attr('href', '/docs/' + result.docid + '/trie?callback=loadTrie');
+    }
+
     function onReady() {
         handleAppCache();
         doc = dom.bindIDs();
@@ -61,6 +74,8 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     }
 
     ns.extend({
-        'onReady': onReady
+        'onReady': onReady,
+        'getDoc': getDoc,
+        'onSaveSuccess': onSaveSuccess
     });
 });
