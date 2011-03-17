@@ -1,15 +1,21 @@
 namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
+    /*
+      org.startpad.trie - A JavaScript implementation of a Trie search datastructure.
+
+      Usage:
+
+      trie = new Trie(
+     */
+    var NODE_SEP = ';',
+        STRING_SEP = ',',
+        TERMINAL_PREFIX = '!';
+
+    var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9]+|$)", 'g');
 
     function commonPrefix(w1, w2) {
-        var len = Math.min(w1.length, w2.length);
-        while (len > 0) {
-            var prefix = w1.slice(0, len);
-            if (prefix == w2.slice(0, len)) {
-                return prefix;
-            }
-            len--;
-        }
-        return '';
+        var maxlen = Math.min(w1.length, w2.length);
+        for (var i = 0; i < maxlen && w1[i] == w2[i]; i++) {}
+        return w1.slice(0, i);
     }
 
     function Trie(words) {
@@ -18,7 +24,11 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
     }
 
     Trie.methods({
+        // Add words from one big string, or as an array.
         addWords: function(words) {
+            if (words == undefined) {
+                return;
+            }
             if (typeof words == 'string') {
                 words = words.split(/[^a-zA-Z]+/);
             }
@@ -26,12 +36,12 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                 var word = words[i].toLowerCase();
                 word = word.replace(/[^a-z]/, '');
                 if (word.length != 0) {
-                    this.insertString(word, this.root);
+                    this.insert(word, this.root);
                 }
             }
         },
 
-        insertString: function(word, node) {
+        insert: function(word, node) {
             var i, prefix, next, prop;
 
             if (word == '') {
@@ -49,7 +59,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                     }
                     // Prop is a proper prefix - recurse to child node
                     if (prop == prefix && typeof node[prop] == 'object') {
-                        this.insertString(word.slice(prefix.length), node[prop]);
+                        this.insert(word.slice(prefix.length), node[prop]);
                         return;
                     }
                     // No need to split node - just a duplicate word.
@@ -75,8 +85,6 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         },
 
         isFragment: function(word, node) {
-            var ch;
-
             if (word.length == 0) {
                 return !!node[''];
             }
@@ -141,7 +149,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                     sep = '';
 
                 if (node['']) {
-                    line += '!';
+                    line += TERMINAL_PREFIX;
                 }
 
                 for (var prop in node) {
@@ -149,7 +157,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                         node[prop] != '') {
                         if (typeof node[prop] == 'number') {
                             line += sep + prop;
-                            sep = ',';
+                            sep = STRING_SEP;
                             continue;
                         }
                         line += sep + prop + (node[prop]._n - node._n);
@@ -172,12 +180,68 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             var stack = [];
             numberNodes(this.root, 0);
             pushNodeLines(this.root, stack);
-            return stack.join(';');
+            return stack.join(NODE_SEP);
+        }
+    });
+
+    // Implement isWord given a packed representation of a Trie.
+    function PackedTrie(pack) {
+        this.nodes = pack.split(NODE_SEP);
+    }
+
+    PackedTrie.methods({
+        isWord: function(word) {
+            return this.isFragment(word, 0);
+        },
+
+        isFragment: function(word, inode) {
+            var node = this.nodes[inode];
+
+            if (word.length == 0) {
+                return node[0] == TERMINAL_PREFIX;
+            }
+
+            var next = this.findNextNode(word, node);
+
+            if (next == undefined) {
+                return false;
+            }
+            if (next.terminal) {
+                return true;
+            }
+
+            return this.isFragment(word.slice(next.prefix.length), inode + next.dnode);
+        },
+
+        // Find a prefix of word in the packed node and return:
+        // {dnode: number, terminal: boolean, prefix: string}
+        // (or undefined in no word prefix found).
+        findNextNode: function(word, node) {
+            if (node[0] == TERMINAL_PREFIX) {
+                node = node.slice(1);
+            }
+            var match;
+            node.replace(reNodePart, function(w, prefix, ref) {
+                // Already found a match - bail out eventually.
+                if (match) {
+                    return;
+                }
+                if (prefix == word.slice(0, prefix.length)) {
+                    if (ref == STRING_SEP || ref == '') {
+                        match = {terminal: true, prefix: prefix};
+                        return;
+                    }
+                    match = {terminal: false, prefix: prefix, dnode: parseInt(ref)};
+                }
+            });
+            return match;
         }
     });
 
     ns.extend({
-        'Trie': Trie
+        'Trie': Trie,
+        'PackedTrie': PackedTrie,
+        'NODE_SEP': NODE_SEP
     });
 });
 
