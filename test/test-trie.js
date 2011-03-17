@@ -58,7 +58,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
 
         ts.addTest('pack', function(ut) {
             var trie = new trieLib.Trie("aah aahed aahing aahs aal");
-            ut.assertEq(trie.pack(), "aa1\nh1l\n!ed,ing,s");
+            ut.assertEq(trie.pack(), "aa1;h1l;!ed,ing,s");
         });
 
     };
