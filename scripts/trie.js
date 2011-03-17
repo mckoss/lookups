@@ -20,7 +20,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
     Trie.methods({
         addWords: function(words) {
             if (typeof words == 'string') {
-                words = words.split(/\s+/);
+                words = words.split(/[^a-zA-Z]+/);
             }
             for (var i = 0; i < words.length; i++) {
                 var word = words[i].toLowerCase();
@@ -50,6 +50,10 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                     // Prop is a proper prefix - recurse to child node
                     if (prop == prefix && typeof node[prop] == 'object') {
                         this.insertString(word.slice(prefix.length), node[prop]);
+                        return;
+                    }
+                    // No need to split node - just a duplicate word.
+                    if (prop == word && typeof node[prop] == 'number') {
                         return;
                     }
                     // Insert an intermediate node for the prefix

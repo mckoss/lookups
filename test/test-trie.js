@@ -36,7 +36,11 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 {dict: "abcde abcfg",
                  words: ['abcde', 'abcfg'],
                  nonWords: ['abc'],
-                 nodeCount: 2}
+                 nodeCount: 2},
+                {dict: "to to",
+                 words: ['to'],
+                 nonWords: ['t'],
+                 nodeCount: 1}
             ];
             for (i = 0; i < tests.length; i++) {
                 var test = tests[i];
