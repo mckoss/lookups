@@ -95,6 +95,40 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             }
 
             return false;
+        },
+
+        // Return packed representation of Trie as a string.
+        //
+        // Each node of the Trie is output on a single line.
+        //
+        // For example:
+        // {
+        //    "th": {
+        //      "is": 1,
+        //      "e": {
+        //        "": 1,
+        //        "m": 1,
+        //        "re": 1,
+        //        "sis": 1
+        //      }
+        //    }
+        //  }
+        // Whould be reperesented as:
+        //
+        //
+        // th1
+        // is|e1
+        // !m|re|sis
+        //
+        // The line begins with a '!' iff it is a terminal node of the Trie.
+        // For each string property in a node, the string is listed, along
+        // with a (relative!) line number of the node that string references.
+        // Terminal strings (those without child node references) are
+        // separated by '|' characters.
+        pack: function() {
+            function numberNodes() {
+
+            }
         }
     });
 
