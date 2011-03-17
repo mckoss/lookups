@@ -1,5 +1,17 @@
 namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
+    function commonPrefix(w1, w2) {
+        var len = Math.min(w1.length, w2.length);
+        while (len > 0) {
+            var prefix = w1.slice(0, len);
+            if (prefix == w2.slice(0, len)) {
+                return prefix;
+            }
+            len--;
+        }
+        return '';
+    }
+
     function Trie(words) {
         this.root = {};
         this.addWords(words);
@@ -22,49 +34,30 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         insertString: function(word, node) {
             var i, prefix, next, prop;
 
-            // Split the common prefix and add nodes for for prefix and word.
-            function split(prefix, word) {
-                var next;
-
-                next = {};
-                node[prefix] = next;
-                this.insertString('', next);
-                this.insertString(word.slice(prefix.length), next);
-            }
-
             if (word == '') {
                 // 1 has the smallest JSON representation of any constant.
                 node[word] = 1;
                 return;
             }
 
-            // Find if any prefix of word is in node
-            for (i = 1; i <= word.length; i++) {
-                prefix = word.slice(0, i);
-                if (node[prefix] == undefined) {
-                    continue;
-                }
-                next = node[prefix];
-                if (typeof next == 'object') {
-                    this.insertString(word.slice(prefix.length), next);
-                    return;
-                }
-                delete node[prefix];
-                split.call(this, prefix, word);
-                return;
-            }
-
-            // Find words that contain word as a prefix
+            // Do any existing props share a common prefix?
             for (prop in node) {
                 if (node.hasOwnProperty(prop)) {
-                    if (word != prop.slice(0, word.length)) {
+                    prefix = commonPrefix(word, prop);
+                    if (prefix.length == 0) {
                         continue;
                     }
-                    // Insert an intermediate node
-                    next = {'': 1};
-                    node[word] = next;
-                    next[prop.slice(word.length)] = node[prop];
+                    // Prop is a proper prefix - recurse to child node
+                    if (prop == prefix && typeof node[prop] == 'object') {
+                        this.insertString(word.slice(prefix.length), node[prop]);
+                        return;
+                    }
+                    // Insert an intermediate node for the prefix
+                    next = {};
+                    next[prop.slice(prefix.length)] = node[prop];
+                    next[word.slice(prefix.length)] = 1;
                     delete node[prop];
+                    node[prefix] = next;
                     return;
                 }
             }
