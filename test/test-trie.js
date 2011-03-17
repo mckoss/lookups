@@ -42,6 +42,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                  nonWords: ['t'],
                  nodeCount: 1}
             ];
+
             for (i = 0; i < tests.length; i++) {
                 var test = tests[i];
                 var trie = new trieLib.Trie(test.dict);
@@ -53,6 +54,11 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                     ut.assert(!trie.isWord(test.nonWords[j]), test.nonWords[j] + " is not a word");
                 }
             }
+        });
+
+        ts.addTest('pack', function(ut) {
+            var trie = new trieLib.Trie("aah aahed aahing aahs aal");
+            ut.assertEq(trie.pack(), "aa1\nh1l\n!ed,ing,s");
         });
 
     };

@@ -113,12 +113,12 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         //      }
         //    }
         //  }
-        // Whould be reperesented as:
+        // Would be reperesented as:
         //
         //
         // th1
-        // is|e1
-        // !m|re|sis
+        // is,e1
+        // !m,re,sis
         //
         // The line begins with a '!' iff it is a terminal node of the Trie.
         // For each string property in a node, the string is listed, along
@@ -127,9 +127,52 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         // separated by '|' characters.
         pack: function() {
             function numberNodes(node, start) {
-                
-
+                node._n = start++;
+                for (var prop in node) {
+                    if (node.hasOwnProperty(prop) && typeof node[prop] == 'object') {
+                        start = numberNodes(node[prop], start);
+                    }
+                }
+                return start;
             }
+
+            function nodeLine(node) {
+                var line = '',
+                    sep = '';
+
+                if (node['']) {
+                    line += '!';
+                }
+
+                for (var prop in node) {
+                    if (node.hasOwnProperty(prop) && prop[0] != '_' && prop != '' &&
+                        node[prop] != '') {
+                        if (typeof node[prop] == 'number') {
+                            line += sep + prop;
+                            sep = ',';
+                            continue;
+                        }
+                        line += sep + prop + (node[prop]._n - node._n);
+                        sep = '';
+                    }
+                }
+
+                return line;
+            }
+
+            function pushNodeLines(node, stack) {
+                stack.push(nodeLine(node));
+                for (var prop in node) {
+                    if (node.hasOwnProperty(prop) && typeof node[prop] == 'object') {
+                        pushNodeLines(node[prop], stack);
+                    }
+                }
+            }
+
+            var stack = [];
+            numberNodes(this.root, 0);
+            pushNodeLines(this.root, stack);
+            return stack.join(';');
         }
     });
 
