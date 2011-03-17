@@ -95,6 +95,84 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             }
 
             return false;
+        },
+
+        // Return packed representation of Trie as a string.
+        //
+        // Each node of the Trie is output on a single line.
+        //
+        // For example:
+        // {
+        //    "th": {
+        //      "is": 1,
+        //      "e": {
+        //        "": 1,
+        //        "m": 1,
+        //        "re": 1,
+        //        "sis": 1
+        //      }
+        //    }
+        //  }
+        // Would be reperesented as:
+        //
+        //
+        // th1
+        // is,e1
+        // !m,re,sis
+        //
+        // The line begins with a '!' iff it is a terminal node of the Trie.
+        // For each string property in a node, the string is listed, along
+        // with a (relative!) line number of the node that string references.
+        // Terminal strings (those without child node references) are
+        // separated by '|' characters.
+        pack: function() {
+            function numberNodes(node, start) {
+                node._n = start++;
+                for (var prop in node) {
+                    if (node.hasOwnProperty(prop) && typeof node[prop] == 'object') {
+                        start = numberNodes(node[prop], start);
+                    }
+                }
+                return start;
+            }
+
+            function nodeLine(node) {
+                var line = '',
+                    sep = '';
+
+                if (node['']) {
+                    line += '!';
+                }
+
+                for (var prop in node) {
+                    if (node.hasOwnProperty(prop) && prop[0] != '_' && prop != '' &&
+                        node[prop] != '') {
+                        if (typeof node[prop] == 'number') {
+                            line += sep + prop;
+                            sep = ',';
+                            continue;
+                        }
+                        line += sep + prop + (node[prop]._n - node._n);
+                        sep = '';
+                    }
+                }
+
+                return line;
+            }
+
+            function pushNodeLines(node, stack) {
+                stack.push(nodeLine(node));
+                for (var prop in node) {
+                    if (node.hasOwnProperty(prop) && typeof node[prop] == 'object') {
+                        pushNodeLines(node[prop], stack);
+                    }
+                }
+            }
+
+            var stack = [];
+            numberNodes(this.root, 0);
+            pushNodeLines(this.root, stack);
+            return stack.join(';');
         }
     });
 

@@ -26,9 +26,9 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     function onBuild() {
         var dict = $(doc.dictionary).val();
         trie = new trieLib.Trie(dict);
-        compact = JSON.stringify(trie.root);
-        $(doc.output).text(JSON.stringify(trie.root, undefined, 2));
-        $(doc.size).text("Trie JSON length = " + format.thousands(compact.length) +
+        compact = trie.pack();
+        $(doc.output).text(compact.split(';').join('\n'));
+        $(doc.size).text("Trie packed length = " + format.thousands(compact.length) +
                          " (dictionary length: " + format.thousands(dict.length) + ")");
     }
 
