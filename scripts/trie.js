@@ -226,11 +226,14 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                 if (match) {
                     return;
                 }
-                if (prefix == word.slice(0, prefix.length)) {
-                    if (ref == STRING_SEP || ref == '') {
+                // Match a terminal string - in middle or end of node
+                if (ref == STRING_SEP || ref == '') {
+                    if (prefix == word) {
                         match = {terminal: true, prefix: prefix};
-                        return;
                     }
+                    return;
+                }
+                if (prefix == word.slice(0, prefix.length)) {
                     match = {terminal: false, prefix: prefix, dnode: parseInt(ref)};
                 }
             });

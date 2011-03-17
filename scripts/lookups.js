@@ -4,7 +4,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     var format = namespace.lookup('org.startpad.format');
     var trieLib = namespace.lookup('org.startpad.trie');
     var client;
-    var trie;
+    var ptrie;
     var compact;
 
     var doc;                            // Bound elements here
@@ -25,8 +25,9 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
 
     function onBuild() {
         var dict = $(doc.dictionary).val();
-        trie = new trieLib.Trie(dict);
+        var trie = new trieLib.Trie(dict);
         compact = trie.pack();
+        ptrie = new trieLib.PackedTrie(compact);
         $(doc.output).text(compact.split(';').join('\n'));
         $(doc.size).text("Trie packed length = " + format.thousands(compact.length) +
                          " (dictionary length: " + format.thousands(dict.length) + ")");
@@ -34,7 +35,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
 
     function testWord() {
         var word = $(doc.word).val();
-        if (trie.isWord($(doc.word).val())) {
+        if (ptrie.isWord($(doc.word).val())) {
             $(doc.result).text(word + " is a word!");
         } else {
             $(doc.result).text(word + " is not in the trie.");
