@@ -6,9 +6,12 @@ Inspired by two blog posts by John Resig:
 - [Dictionary Lookups in JavaScript]
 - [JavaScript Trie Performance Analysis]
 
-See also the [Home Page] and [Unit Tests].
+You can try out hosted version of this software at:
 
-  [Home Page]: http://lookups.pageforest.com
+- [JavaScript Lookups]
+- [Unit Tests].
+
+  [JavaScript Lookups]: http://lookups.pageforest.com/
   [Unit Tests]: http://lookups.pageforest.com/test/test-runner.html
   [Dictionary Lookups in JavaScript]: http://ejohn.org/blog/dictionary-lookups-in-javascript/
   [JavaScript Trie Performance Analysis]:  http://ejohn.org/blog/javascript-trie-performance-analysis/
