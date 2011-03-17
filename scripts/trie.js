@@ -126,7 +126,8 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         // Terminal strings (those without child node references) are
         // separated by '|' characters.
         pack: function() {
-            function numberNodes() {
+            function numberNodes(node, start) {
+                
 
             }
         }
