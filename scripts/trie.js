@@ -4,8 +4,18 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
       Usage:
 
-      trie = new Trie(
+          trie = new Trie(dictionary-string);
+          bool = trie.isWord(word);
+
+      To use a packed (compressed) version of the trie stored as a string:
+
+          compressed = trie.pack();
+          ptrie = new PackedTrie(compressed);
+          bool = ptrie.isWord(word)
      */
+    var base = namespace.lookup('org.startpad.base');
+    var util = namespace.util;
+
     var NODE_SEP = ';',
         STRING_SEP = ',',
         TERMINAL_PREFIX = '!';
@@ -18,35 +28,72 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         return w1.slice(0, i);
     }
 
-    function Trie(words) {
+    // Create a Trie data structure for searching for membership of strings
+    // in a dictionary in a very space efficient way.  Note if you
+    // need to insert words in random order, call Trie(word, {sharedSuffixes: false}).
+    // You will get a proper Trie, rather than a more optimal DAWG - but you can
+    // continue to make online insertions even after it is generated (I think this
+    // restriction can be relaxed with a bit more complexity...).
+    function Trie(words, options) {
+        this.options = base.extendObject({sharedSuffixes: true}, options);
         this.root = {};
+        this.lastWord = '';
+        this.suffixes = {};
+        this._cNext = 1;
         this.addWords(words);
     }
 
     Trie.methods({
         // Add words from one big string, or as an array.
         addWords: function(words) {
+            var i;
+
             if (words == undefined) {
                 return;
             }
             if (typeof words == 'string') {
                 words = words.split(/[^a-zA-Z]+/);
             }
-            for (var i = 0; i < words.length; i++) {
-                var word = words[i].toLowerCase();
-                word = word.replace(/[^a-z]/, '');
-                if (word.length != 0) {
-                    this.insert(word, this.root);
-                }
+            for (i = 0; i < words.length; i++) {
+                words[i] = words[i].toLowerCase();
+            }
+            if (this.options.sharedSuffixes) {
+                words.sort();
+                base.uniqueArray(words);
+            }
+            for (i = 0; i < words.length; i++) {
+                this.insert(words[i], this.root);
             }
         },
 
         insert: function(word, node) {
+            this._insert(word, node);
+            if (this.options.sharedSuffixes) {
+                var prefix = commonPrefix(word, this.lastWord);
+                if (prefix == this.lastWord) {
+                    this.lastWord = word;
+                    return;
+                }
+                var frozen = this.lastWord.slice(prefix.length + 1);
+                this.combineSuffixes(frozen);
+                this.lastWord = word;
+            }
+        },
+
+        _insert: function(word, node) {
             var i, prefix, next, prop;
+
+            if (word == this.lastWord || word.length == 0) {
+                return;
+            }
+
+            if (this.options.sharedSuffixes && word <= this.lastWord) {
+                throw new Error("Words must be inserted in sorted order.");
+            }
 
             if (word == '') {
                 // 1 has the smallest JSON representation of any constant.
-                node[word] = 1;
+                node._ = 1;
                 return;
             }
 
@@ -59,14 +106,13 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                     }
                     // Prop is a proper prefix - recurse to child node
                     if (prop == prefix && typeof node[prop] == 'object') {
-                        this.insert(word.slice(prefix.length), node[prop]);
+                        this._insert(word.slice(prefix.length), node[prop]);
                         return;
                     }
                     // No need to split node - just a duplicate word.
                     if (prop == word && typeof node[prop] == 'number') {
                         return;
                     }
-                    // Insert an intermediate node for the prefix
                     next = {};
                     next[prop.slice(prefix.length)] = node[prop];
                     next[word.slice(prefix.length)] = 1;
@@ -80,29 +126,101 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             node[word] = 1;
         },
 
+        // Well ordered list of properties in a node (string or object properties)
+        // Use nodesOnly==true to return only properties of child nodes.
+        nodeProps: function(node, nodesOnly) {
+            var props = [];
+            for (var prop in node) {
+                if (node.hasOwnProperty(prop) && prop[0] != '_') {
+                    if (!nodesOnly || typeof node[prop] == 'object') {
+                        props.push(prop);
+                    }
+                }
+            }
+            props.sort();
+            return props;
+        },
+
+        // Look at all unchecked nodes to see if we can combine suffixes.
+        combineSuffixes: function(word) {
+            var found = this.findNode(word, this.root);
+            found.parent[found.prop] = this.combineSuffixNode(found.node);
+        },
+
+        combineSuffixNode: function(node) {
+            // Only checked nodes are numbered.
+            if (node._c) {
+                return;
+            }
+            // Make sure all children are combined and generate unique node
+            // signature for this node.
+            var sig = [];
+            var props = this.nodeProps(node);
+            for (var i = 0; i < props.length; i++) {
+                var prop = props[i];
+                if (typeof node[prop] == 'object') {
+                    node[prop] = this.combineSuffixNode(node[prop]);
+                    sig.push(prop);
+                    sig.push(node[prop]._c);
+                } else {
+                    sig.push(prop);
+                }
+            }
+            sig = sig.join('-');
+            // This node already exists - return it to parent!
+            if (this.suffixes[sig]) {
+                return this.suffixes[sig];
+            }
+            this.suffixes[sig] = node;
+            this._c = this._cNext++;
+            return node;
+        },
+
         isWord: function(word) {
             return this.isFragment(word, this.root);
         },
 
+        isTerminal: function(node) {
+            return !!node['_'];
+        },
+
         isFragment: function(word, node) {
             if (word.length == 0) {
-                return !!node[''];
+                return this.isTerminal(node);
             }
 
             if (node[word] === 1) {
                 return true;
             }
 
-            // Find a prefix of word
-            for (var prop in node) {
-                if (node.hasOwnProperty(prop) &&
-                    prop == word.slice(0, prop.length) &&
-                    typeof node[prop] == 'object') {
+            // Find a prefix of word reference to a child
+            var props = this.nodeProps(node, true);
+            for (var i = 0; i < props.length; i++) {
+                var prop = props[i];
+                if (prop == word.slice(0, prop.length)) {
                     return this.isFragment(word.slice(prop.length), node[prop]);
                 }
             }
 
             return false;
+        },
+
+        // Return {parent: , node: , prop: } where parent[prop] == node,
+        // and the node is the deepest node in the Trie than contains
+        // word.
+        findNode: function(word, node) {
+            var props = this.nodeProps(node, true);
+            for (var i = 0; i < props.length; i++) {
+                var prop = props[i];
+                if (prop == word.slice(0, prop.length)) {
+                    var found = this.findNode(word.slice(prop.length), node[prop]);
+                    if (found) {
+                        return found;
+                    } else {
+                        return {parent: node, node: node[prop], prop: prop};
+                    }
+                }
+            }
         },
 
         // Return packed representation of Trie as a string.
@@ -134,12 +252,12 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         // Terminal strings (those without child node references) are
         // separated by '|' characters.
         pack: function() {
+            var self = this;
             function numberNodes(node, start) {
                 node._n = start++;
-                for (var prop in node) {
-                    if (node.hasOwnProperty(prop) && typeof node[prop] == 'object') {
-                        start = numberNodes(node[prop], start);
-                    }
+                var props = self.nodeProps(node, true);
+                for (var i = 0; i < props.length; i++) {
+                    start = numberNodes(node[props[i]], start);
                 }
                 return start;
             }
@@ -148,21 +266,20 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                 var line = '',
                     sep = '';
 
-                if (node['']) {
+                if (self.isTerminal(node)) {
                     line += TERMINAL_PREFIX;
                 }
 
-                for (var prop in node) {
-                    if (node.hasOwnProperty(prop) && prop[0] != '_' && prop != '' &&
-                        node[prop] != '') {
-                        if (typeof node[prop] == 'number') {
-                            line += sep + prop;
-                            sep = STRING_SEP;
-                            continue;
-                        }
-                        line += sep + prop + (node[prop]._n - node._n);
-                        sep = '';
+                var props = self.nodeProps(node);
+                for (var i = 0; i < props.length; i++) {
+                    var prop = props[i];
+                    if (typeof node[prop] == 'number') {
+                        line += sep + prop;
+                        sep = STRING_SEP;
+                        continue;
                     }
+                    line += sep + prop + (node[prop]._n - node._n);
+                    sep = '';
                 }
 
                 return line;
@@ -170,10 +287,9 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
             function pushNodeLines(node, stack) {
                 stack.push(nodeLine(node));
-                for (var prop in node) {
-                    if (node.hasOwnProperty(prop) && typeof node[prop] == 'object') {
-                        pushNodeLines(node[prop], stack);
-                    }
+                var props = self.nodeProps(node, true);
+                for (var i = 0; i < props.length; i++) {
+                    pushNodeLines(node[props[i]], stack);
                 }
             }
 
@@ -247,4 +363,3 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         'NODE_SEP': NODE_SEP
     });
 });
-
