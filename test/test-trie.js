@@ -58,6 +58,19 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
 
     ns.addTests = function (ts) {
 
+        ts.addTest("toAlphaCode", function(ut) {
+            var tests = [
+                [0, 'A'], [1, 'B'], [2, 'C'], [25, 'Z'],
+                [26, 'AA'], [27, 'AB'],
+                [26 + 676, 'AAA']
+            ];
+
+            for (var i = 0; i < tests.length; i++) {
+                var test = tests[i];
+                ut.assertEq(trieLib.toAlphaCode(test[0]), test[1]);
+            }
+        });
+
         ts.addTest("Trie", function(ut) {
             var i, j;
 

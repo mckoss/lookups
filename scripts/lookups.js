@@ -36,9 +36,9 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     function testWord() {
         var word = $(doc.word).val();
         if (ptrie.isWord($(doc.word).val())) {
-            $(doc.result).text(word + " is a word!");
+            $(doc.result).text(word + " is in Trie!");
         } else {
-            $(doc.result).text(word + " is not in the trie.");
+            $(doc.result).text(word + " is not in the Trie.");
         }
     }
 

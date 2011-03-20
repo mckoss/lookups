@@ -27,6 +27,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
           '_c': A unique name for the node (starting from 1), used in combining Suffixes.
           '_n': Created when packing the Trie, the sequential node number
               (in pre-order traversal).
+          '_s': The number of times a node is shared (it's in-degree from other nodes).
      */
     var base = namespace.lookup('org.startpad.base');
 
@@ -51,6 +52,23 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
         }
     }
+
+    // A, B, C, ..., AA, AB, AC, ..., AAA, AAB, ...
+    function toAlphaCode(n) {
+        var places, range, s = "";
+
+        for (places = 1, range = 26;
+             n >= range;
+             n -= range, places++, range *= 26) {}
+
+        while (places--) {
+            var d = n % 26;
+            s = String.fromCharCode(65 + d) + s;
+            n = (n - d) / 26;
+        }
+        return s;
+    }
+
     // Create a Trie data structure for searching for membership of strings
     // in a dictionary in a very space efficient way.
     function Trie(words) {
@@ -181,8 +199,13 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
             sig = sig.join('-');
             // This node already exists - replace with original
-            if (this.suffixes[sig]) {
-                return this.suffixes[sig];
+            var shared = this.suffixes[sig];
+            if (shared) {
+                if (!shared._s) {
+                    shared._s = 1;
+                }
+                shared._s++;
+                return shared;
             }
             this.suffixes[sig] = node;
             node._c = this._cNext++;
@@ -304,7 +327,11 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                     numberNodes(node[props[i]]);
                 }
                 node._n = pos++;
-                stack.push(nodeLine(node));
+                var line = nodeLine(node);
+                stack.push(line);
+                if (node._s) {
+                    console.log("Shared (" + node._s + "): " + line);
+                }
             }
 
             numberNodes(this.root, 0);
@@ -373,6 +400,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
     ns.extend({
         'Trie': Trie,
         'PackedTrie': PackedTrie,
-        'NODE_SEP': NODE_SEP
+        'NODE_SEP': NODE_SEP,
+        'toAlphaCode': toAlphaCode
     });
 });
