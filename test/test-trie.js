@@ -53,7 +53,17 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
          wordCount: 9,
          nonWords: ['ing', 's', 'cating', 'doging'],
          pack: "bat1cat1dog2fish3;!s;!ging,s;!ing",
-         nodeCount: 4}
+         nodeCount: 4},
+        {dict: "tap taps top tops cap caps cop cops",
+         words: ['cap', 'caps'],
+         nonWords: ['c', 'ap'],
+         nodeCount: 3,
+         pack: "c1t1;ap1op1;!s"},
+        {dict: "bing sing ding ring",
+         words: ['bing', 'sing'],
+         nonWords: ['b', 'ing'],
+         nodeCount: 2,
+         pack: "Aing;bA,dA,rA,sA"}
     ];
 
     ns.addTests = function (ts) {

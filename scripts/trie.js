@@ -75,6 +75,8 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         this.root = {};
         this.lastWord = '';
         this.suffixes = {};
+        this.suffixCounts = {};
+        this.aliases = {};
         this._cNext = 1;
         this.wordCount = 0;
         this.insertWords(words);
@@ -126,28 +128,26 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
 
             // Do any existing props share a common prefix?
             for (prop in node) {
-                if (node.hasOwnProperty(prop)) {
-                    prefix = commonPrefix(word, prop);
-                    if (prefix.length == 0) {
-                        continue;
-                    }
-                    // Prop is a proper prefix - recurse to child node
-                    if (prop == prefix && typeof node[prop] == 'object') {
-                        this._insert(word.slice(prefix.length), node[prop]);
-                        return;
-                    }
-                    // Duplicate terminal string - ignore
-                    if (prop == word && typeof node[prop] == 'number') {
-                        return;
-                    }
-                    next = {};
-                    next[prop.slice(prefix.length)] = node[prop];
-                    next[word.slice(prefix.length)] = 1;
-                    delete node[prop];
-                    node[prefix] = next;
-                    this.wordCount++;
+                prefix = commonPrefix(word, prop);
+                if (prefix.length == 0) {
+                    continue;
+                }
+                // Prop is a proper prefix - recurse to child node
+                if (prop == prefix && typeof node[prop] == 'object') {
+                    this._insert(word.slice(prefix.length), node[prop]);
                     return;
                 }
+                // Duplicate terminal string - ignore
+                if (prop == word && typeof node[prop] == 'number') {
+                    return;
+                }
+                next = {};
+                next[prop.slice(prefix.length)] = node[prop];
+                next[word.slice(prefix.length)] = 1;
+                delete node[prop];
+                node[prefix] = next;
+                this.wordCount++;
+                return;
             }
 
             // No shared prefix.  Enter the word here as a terminal string.
@@ -161,7 +161,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         nodeProps: function(node, nodesOnly) {
             var props = [];
             for (var prop in node) {
-                if (node.hasOwnProperty(prop) && prop != '' && prop[0] != '_') {
+                if (prop != '' && prop[0] != '_') {
                     if (!nodesOnly || typeof node[prop] == 'object') {
                         props.push(prop);
                     }
@@ -172,7 +172,57 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         },
 
         optimize: function() {
+            var scores = [];
+
             this.combineSuffixNode(this.root);
+
+            for (var suffix in this.suffixCounts) {
+                var count = this.suffixCounts[suffix];
+                if (count < 3) {
+                    continue;
+                }
+                scores.push([suffix, count]);
+            }
+
+            scores.sort(function (a, b) {
+                return b[1] - a[1];
+            });
+
+            var iCode = 0;
+            for (var i = 0; i < scores.length; i++) {
+                var score = scores[i];
+                var code = toAlphaCode(iCode);
+                // Code is large than string it encodes!
+                if (code.length >= score[0].length) {
+                    continue;
+                }
+                this.aliases[score[0]] = code;
+                iCode++;
+            }
+        },
+
+        incrSuffixCount: function(suffix) {
+            if (suffix.length < 2) {
+                return;
+            }
+            // First time to see suffix.
+            if (!this.suffixCounts[suffix]) {
+                this.suffixCounts[suffix] = 1;
+                this.incrSuffixCount(suffix.slice(1));
+                return;
+            }
+
+            this.suffixCounts[suffix]++;
+        },
+
+        propAlias: function(prop) {
+            if (prop.length < 2) {
+                return prop;
+            }
+            if (this.aliases[prop]) {
+                return this.aliases[prop];
+            }
+            return prop[0] + this.propAlias(prop.slice(1));
         },
 
         combineSuffixNode: function(node) {
@@ -189,16 +239,21 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             var props = this.nodeProps(node);
             for (var i = 0; i < props.length; i++) {
                 var prop = props[i];
+                // REVIEW: Might miss combining some nodes if prop.length > 1
                 if (typeof node[prop] == 'object') {
                     node[prop] = this.combineSuffixNode(node[prop]);
                     sig.push(prop);
                     sig.push(node[prop]._c);
                 } else {
                     sig.push(prop);
+                    this.incrSuffixCount(prop);
                 }
             }
             sig = sig.join('-');
-            // This node already exists - replace with original
+            return this.registerSuffix(node, sig);
+        },
+
+        registerSuffix: function (node, sig) {
             var shared = this.suffixes[sig];
             if (shared) {
                 if (!shared._s) {
@@ -290,6 +345,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         pack: function() {
             var self = this;
             var lines = [];
+            var nodes = [];
             var pos = 0;
 
             // Make sure we've combined all the common suffixes
@@ -307,7 +363,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                 for (var i = 0; i < props.length; i++) {
                     var prop = props[i];
                     if (typeof node[prop] == 'number') {
-                        line += sep + prop;
+                        line += sep + self.propAlias(prop);
                         sep = STRING_SEP;
                         continue;
                     }
@@ -335,17 +391,21 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                     return;
                 }
                 node._n = pos++;
-                lines.push(node);
+                nodes.push(node);
                 var props = self.nodeProps(node, true);
                 for (var i = 0; i < props.length; i++) {
                     numberNodes(node[props[i]], level + 1);
                 }
             }
 
+            for (var alias in this.aliases) {
+                lines.push(this.aliases[alias] + alias[0] + self.propAlias(alias.slice(1)));
+            }
+
             levelNodes(this.root, 0);
             numberNodes(this.root, 0);
-            for (var i = 0; i < lines.length; i++) {
-                lines[i] = nodeLine(lines[i]);
+            for (var i = 0; i < nodes.length; i++) {
+                lines.push(nodeLine(nodes[i]));
             }
             return lines.join(NODE_SEP);
         }
