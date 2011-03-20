@@ -58,6 +58,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         this.lastWord = '';
         this.suffixes = {};
         this._cNext = 1;
+        this.wordCount = 0;
         this.insertWords(words);
     }
 
@@ -101,7 +102,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             var i, prefix, next, prop;
 
             // Duplicate word entry - ignore
-            if (word == this.lastWord || word.length == 0) {
+            if (word.length == 0) {
                 return;
             }
 
@@ -126,12 +127,14 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                     next[word.slice(prefix.length)] = 1;
                     delete node[prop];
                     node[prefix] = next;
+                    this.wordCount++;
                     return;
                 }
             }
 
             // No shared prefix.  Enter the word here as a terminal string.
             node[word] = 1;
+            this.wordCount++;
         },
 
         // Well ordered list of properties in a node (string or object properties)
