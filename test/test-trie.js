@@ -63,7 +63,12 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
          words: ['bing', 'sing'],
          nonWords: ['b', 'ing'],
          nodeCount: 2,
-         pack: "Aing;bA,dA,rA,sA"}
+         pack: "Aing;bA,dA,rA,sA"},
+        {dict: "abing bbing csing dsing",
+         words: ['abing'],
+         nonWords: ['ing'],
+         nodeCount: 1,
+         pack: 'Aing;abA,bbA,csA,dsA'}
     ];
 
     ns.addTests = function (ts) {
