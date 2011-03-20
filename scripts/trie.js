@@ -1,4 +1,4 @@
-namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
+namespace.lookup('org.startpad.trie').define(function(ns) {
     /*
       org.startpad.trie - A JavaScript implementation of a Trie search datastructure.
 
@@ -12,9 +12,23 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
           compressed = trie.pack();
           ptrie = new PackedTrie(compressed);
           bool = ptrie.isWord(word)
+
+      Node structure:
+
+        Each node of the Trie is an Object that can contain the following properties:
+
+          '_' - If present (with value == 1), the node is a Terminal Node - the prefix
+              leading to this node is a word in the dictionary.
+          numeric properties (value == 1) - the property name is a terminal string
+              so that the prefix + string is a word in the dictionary.
+          Object properties - the property name is one or more characters to be consumed
+              from the prefix of the test string, with the remainder to be checked in
+              the child node.
+          '_c': A unique name for the node (starting from 1), used in combining Suffixes.
+          '_n': Created when packing the Trie, the sequential node number
+              (in pre-order traversal).
      */
     var base = namespace.lookup('org.startpad.base');
-    var util = namespace.util;
 
     var NODE_SEP = ';',
         STRING_SEP = ',',
@@ -28,24 +42,28 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
         return w1.slice(0, i);
     }
 
+    /* Sort elements and remove duplicates from array (modified in place) */
+    function unique(a) {
+        a.sort();
+        for (var i = 1; i < a.length; i++) {
+            if (a[i - 1] == a[i]) {
+                a.splice(i, 1);
+            }
+        }
+    }
     // Create a Trie data structure for searching for membership of strings
-    // in a dictionary in a very space efficient way.  Note if you
-    // need to insert words in random order, call Trie(word, {sharedSuffixes: false}).
-    // You will get a proper Trie, rather than a more optimal DAWG - but you can
-    // continue to make online insertions even after it is generated (I think this
-    // restriction can be relaxed with a bit more complexity...).
-    function Trie(words, options) {
-        this.options = base.extendObject({sharedSuffixes: true}, options);
+    // in a dictionary in a very space efficient way.
+    function Trie(words) {
         this.root = {};
         this.lastWord = '';
         this.suffixes = {};
         this._cNext = 1;
-        this.addWords(words);
+        this.insertWords(words);
     }
 
     Trie.methods({
-        // Add words from one big string, or as an array.
-        addWords: function(words) {
+        // Insert words from one big string, or from an array.
+        insertWords: function(words) {
             var i;
 
             if (words == undefined) {
@@ -57,27 +75,23 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             for (i = 0; i < words.length; i++) {
                 words[i] = words[i].toLowerCase();
             }
-            if (this.options.sharedSuffixes) {
-                words.sort();
-                base.uniqueArray(words);
-            }
+            unique(words);
             for (i = 0; i < words.length; i++) {
-                this.insert(words[i], this.root);
+                this.insert(words[i]);
             }
         },
 
-        insert: function(word, node) {
-            this._insert(word, node);
-            if (this.options.sharedSuffixes) {
-                var prefix = commonPrefix(word, this.lastWord);
-                if (prefix == this.lastWord) {
-                    this.lastWord = word;
-                    return;
-                }
-                var frozen = this.lastWord.slice(prefix.length + 1);
-                this.combineSuffixes(frozen);
-                this.lastWord = word;
+        insert: function(word) {
+            this._insert(word, this.root);
+            var lastWord = this.lastWord;
+            this.lastWord = word;
+
+            var prefix = commonPrefix(word, this.lastWord);
+            if (prefix == lastWord) {
+                return;
             }
+
+            this.combineSuffixes(this.lastWord.slice(prefix.length + 1));
         },
 
         _insert: function(word, node) {
@@ -85,10 +99,6 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
             if (word == this.lastWord || word.length == 0) {
                 return;
-            }
-
-            if (this.options.sharedSuffixes && word <= this.lastWord) {
-                throw new Error("Words must be inserted in sorted order.");
             }
 
             if (word == '') {
@@ -114,7 +124,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                         return;
                     }
                     next = {};
-                    next[prop.slice(prefix.length)] = node[prop];
+                    next[prop.slice(prefix.length)] = 1;
                     next[word.slice(prefix.length)] = 1;
                     delete node[prop];
                     node[prefix] = next;
@@ -122,12 +132,13 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                 }
             }
 
-            // No shared prefix.  Enter the word here as an scalar property.
+            // No shared prefix.  Enter the word here as a terminal string.
             node[word] = 1;
         },
 
         // Well ordered list of properties in a node (string or object properties)
-        // Use nodesOnly==true to return only properties of child nodes.
+        // Use nodesOnly==true to return only properties of child nodes (not
+        // terminal strings.
         nodeProps: function(node, nodesOnly) {
             var props = [];
             for (var prop in node) {
@@ -143,12 +154,19 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
 
         // Look at all unchecked nodes to see if we can combine suffixes.
         combineSuffixes: function(word) {
+            if (word == '') {
+                return;
+            }
             var found = this.findNode(word, this.root);
-            found.parent[found.prop] = this.combineSuffixNode(found.node);
+            found.parent[found.prop] = this.combineSuffixNode(found.parent[found.prop]);
+        },
+
+        freezeTrie: function() {
+            this.combineSuffixNode(this.root);
         },
 
         combineSuffixNode: function(node) {
-            // Only checked nodes are numbered.
+            // Frozen node - can't change.
             if (node._c) {
                 return;
             }
@@ -167,7 +185,7 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
                 }
             }
             sig = sig.join('-');
-            // This node already exists - return it to parent!
+            // This node already exists - replace with original
             if (this.suffixes[sig]) {
                 return this.suffixes[sig];
             }
@@ -205,19 +223,22 @@ namespace.lookup('org.startpad.trie').defineOnce(function(ns) {
             return false;
         },
 
-        // Return {parent: , node: , prop: } where parent[prop] == node,
-        // and the node is the deepest node in the Trie than contains
-        // word.
+        // Return {parent: , prop: } where parent[prop] is the terminal node in the Trie
+        // for the word.
         findNode: function(word, node) {
+            if (word == '' && this.isTerminal(node)) {
+                return true;
+            }
             var props = this.nodeProps(node, true);
             for (var i = 0; i < props.length; i++) {
                 var prop = props[i];
                 if (prop == word.slice(0, prop.length)) {
                     var found = this.findNode(word.slice(prop.length), node[prop]);
                     if (found) {
+                        if (found === true) {
+                            return {parent: node, prop: prop};
+                        }
                         return found;
-                    } else {
-                        return {parent: node, node: node[prop], prop: prop};
                     }
                 }
             }
