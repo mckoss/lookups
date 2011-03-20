@@ -122,7 +122,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                         return;
                     }
                     next = {};
-                    next[prop.slice(prefix.length)] = 1;
+                    next[prop.slice(prefix.length)] = node[prop];
                     next[word.slice(prefix.length)] = 1;
                     delete node[prop];
                     node[prefix] = next;
@@ -150,14 +150,21 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             return props;
         },
 
+        optimize: function() {
+            this.combineSuffixNode(this.root);
+        },
+
         combineSuffixNode: function(node) {
             // Frozen node - can't change.
             if (node._c) {
-                return;
+                return node;
             }
             // Make sure all children are combined and generate unique node
             // signature for this node.
             var sig = [];
+            if (this.isTerminal(node)) {
+                sig.push('!');
+            }
             var props = this.nodeProps(node);
             for (var i = 0; i < props.length; i++) {
                 var prop = props[i];
@@ -172,10 +179,12 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             sig = sig.join('-');
             // This node already exists - replace with original
             if (this.suffixes[sig]) {
+                console.log("Duplicate node: " + sig);
                 return this.suffixes[sig];
             }
             this.suffixes[sig] = node;
-            this._c = this._cNext++;
+            node._c = this._cNext++;
+            console.log("Node sig #" + node._c + ": " + sig);
             return node;
         },
 
@@ -258,7 +267,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             var self = this;
 
             // Make sure we've combined all the common suffixes
-            this.combineSuffixNode(this.root);
+            this.optimize();
 
             function numberNodes(node, start) {
                 node._n = start++;

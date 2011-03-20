@@ -35,7 +35,11 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
         {dict: "to to",
          words: ['to'],
          nonWords: ['t'],
-         nodeCount: 1}
+         nodeCount: 1},
+        {dict: "bat bats cat cats dog dogs fish fishing dogging",
+         words: ['cat', 'bat', 'dog', 'fish', 'fishing', 'dogging'],
+         nonWords: ['ing', 's', 'cating', 'doging'],
+         nodeCount: 5}
     ];
 
     ns.addTests = function (ts) {
@@ -44,8 +48,10 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             var i, j;
 
             for (i = 0; i < tests.length; i++) {
+                ut.trace(i);
                 var test = tests[i];
                 var trie = new trieLib.Trie(test.dict);
+                trie.optimize();
                 ut.assertEq(countNodes(trie.root), test.nodeCount, "node count");
                 for (j = 0; j < test.words.length; j++) {
                     ut.assert(trie.isWord(test.words[j]), test.words[j] + " is a word");
@@ -64,6 +70,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
         ts.addTest('PackedTrie', function(ut) {
             var i, j;
             for (i = 0; i < tests.length; i++) {
+                ut.trace(i);
                 var test = tests[i];
                 var trie = new trieLib.Trie(test.dict);
                 var pack = trie.pack();
