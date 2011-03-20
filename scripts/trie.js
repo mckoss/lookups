@@ -182,12 +182,10 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             sig = sig.join('-');
             // This node already exists - replace with original
             if (this.suffixes[sig]) {
-                console.log("Duplicate node: " + sig);
                 return this.suffixes[sig];
             }
             this.suffixes[sig] = node;
             node._c = this._cNext++;
-            console.log("Node sig #" + node._c + ": " + sig);
             return node;
         },
 
@@ -268,18 +266,11 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // separated by '|' characters.
         pack: function() {
             var self = this;
+            var stack = [];
+            var pos = 0;
 
             // Make sure we've combined all the common suffixes
             this.optimize();
-
-            function numberNodes(node, start) {
-                node._n = start++;
-                var props = self.nodeProps(node, true);
-                for (var i = 0; i < props.length; i++) {
-                    start = numberNodes(node[props[i]], start);
-                }
-                return start;
-            }
 
             function nodeLine(node) {
                 var line = '',
@@ -297,24 +288,27 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                         sep = STRING_SEP;
                         continue;
                     }
-                    line += sep + prop + (node[prop]._n - node._n);
+                    line += sep + prop + (node._n - node[prop]._n);
                     sep = '';
                 }
 
                 return line;
             }
 
-            function pushNodeLines(node, stack) {
-                stack.push(nodeLine(node));
+            function numberNodes(node) {
+                if (node._n != undefined) {
+                    return;
+                }
                 var props = self.nodeProps(node, true);
                 for (var i = 0; i < props.length; i++) {
-                    pushNodeLines(node[props[i]], stack);
+                    numberNodes(node[props[i]]);
                 }
+                node._n = pos++;
+                stack.push(nodeLine(node));
             }
 
-            var stack = [];
             numberNodes(this.root, 0);
-            pushNodeLines(this.root, stack);
+            stack.reverse();
             return stack.join(NODE_SEP);
         }
     });

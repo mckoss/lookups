@@ -52,7 +52,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
          words: ['cat', 'bat', 'dog', 'fish', 'fishing', 'dogging'],
          wordCount: 9,
          nonWords: ['ing', 's', 'cating', 'doging'],
-         pack: "bat1cat1dog2fish3;!s;!ging,s;!ing",
+         pack: "bat3cat3dog2fish1;!ing;!ging,s;!s",
          nodeCount: 4}
     ];
 
