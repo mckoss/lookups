@@ -17,7 +17,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
 
         Each node of the Trie is an Object that can contain the following properties:
 
-          '_' - If present (with value == 1), the node is a Terminal Node - the prefix
+          '' - If present (with value == 1), the node is a Terminal Node - the prefix
               leading to this node is a word in the dictionary.
           numeric properties (value == 1) - the property name is a terminal string
               so that the prefix + string is a word in the dictionary.
@@ -86,24 +86,22 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             var lastWord = this.lastWord;
             this.lastWord = word;
 
-            var prefix = commonPrefix(word, this.lastWord);
+            var prefix = commonPrefix(word, lastWord);
             if (prefix == lastWord) {
                 return;
             }
 
-            this.combineSuffixes(this.lastWord.slice(prefix.length + 1));
+            var freeze = this.uniqueNode(lastWord, word, this.root);
+            if (freeze) {
+                this.combineSuffixNode(freeze);
+            }
         },
 
         _insert: function(word, node) {
             var i, prefix, next, prop;
 
+            // Duplicate word entry - ignore
             if (word == this.lastWord || word.length == 0) {
-                return;
-            }
-
-            if (word == '') {
-                // 1 has the smallest JSON representation of any constant.
-                node._ = 1;
                 return;
             }
 
@@ -119,7 +117,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                         this._insert(word.slice(prefix.length), node[prop]);
                         return;
                     }
-                    // No need to split node - just a duplicate word.
+                    // Duplicate terminal string - ignore
                     if (prop == word && typeof node[prop] == 'number') {
                         return;
                     }
@@ -142,7 +140,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         nodeProps: function(node, nodesOnly) {
             var props = [];
             for (var prop in node) {
-                if (node.hasOwnProperty(prop) && prop[0] != '_') {
+                if (node.hasOwnProperty(prop) && prop != '' && prop[0] != '_') {
                     if (!nodesOnly || typeof node[prop] == 'object') {
                         props.push(prop);
                     }
@@ -150,19 +148,6 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
             props.sort();
             return props;
-        },
-
-        // Look at all unchecked nodes to see if we can combine suffixes.
-        combineSuffixes: function(word) {
-            if (word == '') {
-                return;
-            }
-            var found = this.findNode(word, this.root);
-            found.parent[found.prop] = this.combineSuffixNode(found.parent[found.prop]);
-        },
-
-        freezeTrie: function() {
-            this.combineSuffixNode(this.root);
         },
 
         combineSuffixNode: function(node) {
@@ -199,7 +184,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         },
 
         isTerminal: function(node) {
-            return !!node['_'];
+            return !!node[''];
         },
 
         isFragment: function(word, node) {
@@ -223,25 +208,22 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             return false;
         },
 
-        // Return {parent: , prop: } where parent[prop] is the terminal node in the Trie
-        // for the word.
-        findNode: function(word, node) {
-            if (word == '' && this.isTerminal(node)) {
-                return true;
-            }
+        // Find highest node in Trie that is on the path to word
+        // and that is NOT on the path to other.
+        uniqueNode: function (word, other, node) {
             var props = this.nodeProps(node, true);
             for (var i = 0; i < props.length; i++) {
                 var prop = props[i];
                 if (prop == word.slice(0, prop.length)) {
-                    var found = this.findNode(word.slice(prop.length), node[prop]);
-                    if (found) {
-                        if (found === true) {
-                            return {parent: node, prop: prop};
-                        }
-                        return found;
+                    if (prop != other.slice(0, prop.length)) {
+                        return node[prop];
                     }
+                    return this.uniqueNode(word.slice(prop.length),
+                                           other.slice(prop.length),
+                                           node[prop]);
                 }
             }
+            return undefined;
         },
 
         // Return packed representation of Trie as a string.
@@ -274,6 +256,10 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // separated by '|' characters.
         pack: function() {
             var self = this;
+
+            // Make sure we've combined all the common suffixes
+            this.combineSuffixNode(this.root);
+
             function numberNodes(node, start) {
                 node._n = start++;
                 var props = self.nodeProps(node, true);
