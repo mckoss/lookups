@@ -289,7 +289,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // separated by '|' characters.
         pack: function() {
             var self = this;
-            var stack = [];
+            var lines = [];
             var pos = 0;
 
             // Make sure we've combined all the common suffixes
@@ -311,32 +311,43 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                         sep = STRING_SEP;
                         continue;
                     }
-                    line += sep + prop + (node._n - node[prop]._n);
+                    line += sep + prop + (node[prop]._n - node._n);
                     sep = '';
                 }
 
                 return line;
             }
 
-            function numberNodes(node) {
-                if (node._n != undefined) {
-                    return;
+            // Compute maximum depth of each node
+            function levelNodes(node, level) {
+                if (node._l == undefined || node._l < level) {
+                    node._l = level;
                 }
                 var props = self.nodeProps(node, true);
                 for (var i = 0; i < props.length; i++) {
-                    numberNodes(node[props[i]]);
-                }
-                node._n = pos++;
-                var line = nodeLine(node);
-                stack.push(line);
-                if (node._s) {
-                    console.log("Shared (" + node._s + "): " + line);
+                    levelNodes(node[props[i]], level + 1);
                 }
             }
 
+            // Pre-order traversal, at max depth
+            function numberNodes(node, level) {
+                if (node._n != undefined || node._l != level) {
+                    return;
+                }
+                node._n = pos++;
+                lines.push(node);
+                var props = self.nodeProps(node, true);
+                for (var i = 0; i < props.length; i++) {
+                    numberNodes(node[props[i]], level + 1);
+                }
+            }
+
+            levelNodes(this.root, 0);
             numberNodes(this.root, 0);
-            stack.reverse();
-            return stack.join(NODE_SEP);
+            for (var i = 0; i < lines.length; i++) {
+                lines[i] = nodeLine(lines[i]);
+            }
+            return lines.join(NODE_SEP);
         }
     });
 
