@@ -17,58 +17,53 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
         return count + 1;
     }
 
+    function words(dict) {
+        var a = dict.split(/\s/);
+        return a;
+    }
+
     var tests = [
         {dict: "this is a test",
          wordCount: 4,
-         words: ['this', 'is', 'a', 'test'],
          nonWords: ['t', 'te', 'tes'],
          nodeCount: 2},
         {dict: "them the",
          wordCount: 2,
-         words: ['them', 'the'],
          nonWords: ['th', 'there'],
          nodeCount: 2},
         {dict: "the them th",
          wordCount: 3,
-         words: ['the', 'them', 'th'],
          nonWords: ['t', 'they'],
          nodeCount: 3},
         {dict: "the them the they themselves",
          wordCount: 4,
-         words: ['the', 'them', 'they', 'themselves'],
          nonWords: ['thems'],
          nodeCount: 3},
         {dict: "abcde abcfg cat",
          wordCount: 3,
-         words: ['abcde', 'abcfg'],
          nonWords: ['abc', 'cats'],
          nodeCount: 2},
         {dict: "to to",
          wordCount: 1,
-         words: ['to'],
          nonWords: ['t'],
          nodeCount: 1},
         {dict: "bat bats cat cats dog dogs fish fishing dogging",
-         words: ['cat', 'bat', 'dog', 'fish', 'fishing', 'dogging'],
          wordCount: 9,
          nonWords: ['ing', 's', 'cating', 'doging'],
          pack: "bat1cat1dog2fish3;!s;!ging,s;!ing",
          nodeCount: 4},
         {dict: "tap taps top tops cap caps cop cops",
-         words: ['cap', 'caps'],
          nonWords: ['c', 'ap'],
          nodeCount: 3,
          pack: "c1t1;ap1op1;!s"},
         {dict: "bing sing ding ring",
-         words: ['bing', 'sing'],
          nonWords: ['b', 'ing'],
          nodeCount: 2,
-         pack: "Aing;bA,dA,rA,sA"},
-        {dict: "abing bbing csing dsing",
-         words: ['abing'],
-         nonWords: ['ing'],
-         nodeCount: 1,
-         pack: 'Aing;abA,bbA,csA,dsA'}
+         pack: "b1d1r1s1;ing"},
+        {dict: "bing sing ding ring bad sad dad rad",
+         nonWords: ['b', 'ing', 'ad'],
+         nodeCount: 2,
+         pack: "b1d1r1s1;ad,ing"}
     ];
 
     ns.addTests = function (ts) {
@@ -99,8 +94,9 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 if (test.wordCount != undefined) {
                     ut.assertEq(trie.wordCount, test.wordCount);
                 }
-                for (j = 0; j < test.words.length; j++) {
-                    ut.assert(trie.isWord(test.words[j]), test.words[j] + " is a word");
+                var testWords = words(test.dict);
+                for (j = 0; j < testWords.length; j++) {
+                    ut.assert(trie.isWord(testWords[j]), testWords[j] + " is a word");
                 }
                 for (j = 0; j < test.nonWords.length; j++) {
                     ut.assert(!trie.isWord(test.nonWords[j]), test.nonWords[j] + " is not a word");
@@ -126,8 +122,9 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 console.log("pack: " + pack);
                 ut.assertEq(pack.split(';').length, test.nodeCount, "node count");
                 var ptrie = new trieLib.PackedTrie(pack);
-                for (j = 0; j < test.words.length; j++) {
-                    ut.assert(ptrie.isWord(test.words[j]), test.words[j] + " is a word");
+                var testWords = words(test.dict);
+                for (j = 0; j < testWords.length; j++) {
+                    ut.assert(ptrie.isWord(testWords[j]), testWords[j] + " is a word");
                 }
                 for (j = 0; j < test.nonWords.length; j++) {
                     ut.assert(!ptrie.isWord(test.nonWords[j]), test.nonWords[j] + " is not a word");

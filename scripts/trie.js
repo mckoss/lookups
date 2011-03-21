@@ -76,7 +76,6 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         this.lastWord = '';
         this.suffixes = {};
         this.suffixCounts = {};
-        this.aliases = {};
         this._cNext = 1;
         this.wordCount = 0;
         this.insertWords(words);
@@ -176,6 +175,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
 
             this.combineSuffixNode(this.root);
 
+            /* not used
             for (var suffix in this.suffixCounts) {
                 var count = this.suffixCounts[suffix];
                 if (count < 3) {
@@ -199,6 +199,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                 this.aliases[score[0]] = code;
                 iCode++;
             }
+            */
         },
 
         incrSuffixCount: function(suffix) {
@@ -213,16 +214,6 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
 
             this.suffixCounts[suffix]++;
-        },
-
-        propAlias: function(prop) {
-            if (prop.length < 2) {
-                return prop;
-            }
-            if (this.aliases[prop]) {
-                return this.aliases[prop];
-            }
-            return prop[0] + this.propAlias(prop.slice(1));
         },
 
         combineSuffixNode: function(node) {
@@ -363,7 +354,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                 for (var i = 0; i < props.length; i++) {
                     var prop = props[i];
                     if (typeof node[prop] == 'number') {
-                        line += sep + self.propAlias(prop);
+                        line += sep + prop;
                         sep = STRING_SEP;
                         continue;
                     }
@@ -396,10 +387,6 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                 for (var i = 0; i < props.length; i++) {
                     numberNodes(node[props[i]], level + 1);
                 }
-            }
-
-            for (var alias in this.aliases) {
-                lines.push(this.aliases[alias] + alias[0] + self.propAlias(alias.slice(1)));
             }
 
             levelNodes(this.root, 0);
