@@ -28,6 +28,8 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
           '_n': Created when packing the Trie, the sequential node number
               (in pre-order traversal).
           '_s': The number of times a node is shared (it's in-degree from other nodes).
+          '_v': Visited in DFS.
+          '_g': For singleton nodes, the name of it's single property.
      */
     var base = namespace.lookup('org.startpad.base');
 
@@ -190,48 +192,10 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             var scores = [];
 
             this.combineSuffixNode(this.root);
-
-            /* not used
-            for (var suffix in this.suffixCounts) {
-                var count = this.suffixCounts[suffix];
-                if (count < 3) {
-                    continue;
-                }
-                scores.push([suffix, count]);
-            }
-
-            scores.sort(function (a, b) {
-                return b[1] - a[1];
-            });
-
-            var iCode = 0;
-            for (var i = 0; i < scores.length; i++) {
-                var score = scores[i];
-                var code = toAlphaCode(iCode);
-                // Code is large than string it encodes!
-                if (code.length >= score[0].length) {
-                    continue;
-                }
-                this.aliases[score[0]] = code;
-                iCode++;
-            }
-            */
+            this.collapseChains(this.root);
         },
 
-        incrSuffixCount: function(suffix) {
-            if (suffix.length < 2) {
-                return;
-            }
-            // First time to see suffix.
-            if (!this.suffixCounts[suffix]) {
-                this.suffixCounts[suffix] = 1;
-                this.incrSuffixCount(suffix.slice(1));
-                return;
-            }
-
-            this.suffixCounts[suffix]++;
-        },
-
+        // Convert Trie to a DAWG by sharing identical nodes
         combineSuffixNode: function(node) {
             // Frozen node - can't change.
             if (node._c) {
@@ -246,21 +210,16 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             var props = this.nodeProps(node);
             for (var i = 0; i < props.length; i++) {
                 var prop = props[i];
-                // REVIEW: Might miss combining some nodes if prop.length > 1
                 if (typeof node[prop] == 'object') {
                     node[prop] = this.combineSuffixNode(node[prop]);
                     sig.push(prop);
                     sig.push(node[prop]._c);
                 } else {
                     sig.push(prop);
-                    this.incrSuffixCount(prop);
                 }
             }
             sig = sig.join('-');
-            return this.registerSuffix(node, sig);
-        },
 
-        registerSuffix: function (node, sig) {
             var shared = this.suffixes[sig];
             if (shared) {
                 if (!shared._s) {
@@ -272,6 +231,32 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             this.suffixes[sig] = node;
             node._c = this._cNext++;
             return node;
+        },
+
+        // Remove intermediate singleton nodes by hoisting into their parent
+        collapseChains: function(node) {
+            return;
+            if (node._v) {
+                return;
+            }
+            node._v = true;
+            var props = this.nodeProps(node);
+            for (var i = 0; i < props.length; i++) {
+                var prop = props[i];
+                var child = node[prop];
+                if (typeof child != 'object') {
+                    continue;
+                }
+                this.collapseChains(child);
+                // Hoist the singleton child's single property to the parent
+                if (child._g != undefined) {
+                    delete node[prop];
+                    node[prop + child._g] = child[child._g];
+                }
+            }
+            if (props.length == 1 && node._s == undefined && !this.isTerminal(node)) {
+                node._g = this.nodeProps(node)[0];
+            }
         },
 
         isWord: function(word) {
@@ -351,7 +336,6 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // separated by '|' characters.
         pack: function() {
             var self = this;
-            var lines = [];
             var nodes = [];
             var pos = 0;
 
@@ -374,43 +358,31 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                         sep = STRING_SEP;
                         continue;
                     }
-                    line += sep + prop + (node[prop]._n - node._n);
+                    line += sep + prop + (node._n - node[prop]._n);
                     sep = '';
                 }
 
                 return line;
             }
 
-            // Compute maximum depth of each node
-            function levelNodes(node, level) {
-                if (node._l == undefined || node._l < level) {
-                    node._l = level;
-                }
-                var props = self.nodeProps(node, true);
-                for (var i = 0; i < props.length; i++) {
-                    levelNodes(node[props[i]], level + 1);
-                }
-            }
-
             // Pre-order traversal, at max depth
-            function numberNodes(node, level) {
-                if (node._n != undefined || node._l != level) {
+            function numberNodes(node) {
+                if (node._n != undefined) {
                     return;
                 }
-                node._n = pos++;
-                nodes.push(node);
                 var props = self.nodeProps(node, true);
                 for (var i = 0; i < props.length; i++) {
-                    numberNodes(node[props[i]], level + 1);
+                    numberNodes(node[props[i]]);
                 }
+                node._n = pos++;
+                nodes.unshift(node);
             }
 
-            levelNodes(this.root, 0);
             numberNodes(this.root, 0);
             for (var i = 0; i < nodes.length; i++) {
-                lines.push(nodeLine(nodes[i]));
+                nodes[i] = nodeLine(nodes[i]);
             }
-            return lines.join(NODE_SEP);
+            return nodes.join(NODE_SEP);
         }
     });
 

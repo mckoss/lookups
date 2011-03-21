@@ -29,6 +29,9 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
         {dict: "cat cats",
          nonWords: ['cas'],
          nodeCount: 2},
+        {dict: "a ab abc",
+         nodeCount: 3,
+         pack: "a1;!b1;!c"},
         {dict: "this is a test",
          wordCount: 4,
          nonWords: ['t', 'te', 'tes'],
@@ -104,8 +107,11 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 for (j = 0; j < testWords.length; j++) {
                     ut.assert(trie.isWord(testWords[j]), testWords[j] + " is a word");
                 }
-                for (j = 0; j < test.nonWords.length; j++) {
-                    ut.assert(!trie.isWord(test.nonWords[j]), test.nonWords[j] + " is not a word");
+                if (test.nonWords) {
+                    for (j = 0; j < test.nonWords.length; j++) {
+                        ut.assert(!trie.isWord(test.nonWords[j]),
+                                  test.nonWords[j] + " is not a word");
+                    }
                 }
             }
         });
@@ -132,8 +138,11 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 for (j = 0; j < testWords.length; j++) {
                     ut.assert(ptrie.isWord(testWords[j]), testWords[j] + " is a word");
                 }
-                for (j = 0; j < test.nonWords.length; j++) {
-                    ut.assert(!ptrie.isWord(test.nonWords[j]), test.nonWords[j] + " is not a word");
+                if (test.nonWords) {
+                    for (j = 0; j < test.nonWords.length; j++) {
+                        ut.assert(!ptrie.isWord(test.nonWords[j]),
+                                  test.nonWords[j] + " is not a word");
+                    }
                 }
             }
         });
