@@ -23,6 +23,12 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
     }
 
     var tests = [
+        {dict: "cat",
+         nonWords: ['ca'],
+         nodeCount: 1},
+        {dict: "cat cats",
+         nonWords: ['cas'],
+         nodeCount: 2},
         {dict: "this is a test",
          wordCount: 4,
          nonWords: ['t', 'te', 'tes'],
@@ -90,7 +96,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 var trie = new trieLib.Trie(test.dict);
                 trie.optimize();
                 mark++;
-                ut.assertEq(countNodes(trie.root), test.nodeCount, "node count");
+                ut.assertEq(countNodes(trie.root), test.nodeCount, "node count: " + trie.pack());
                 if (test.wordCount != undefined) {
                     ut.assertEq(trie.wordCount, test.wordCount);
                 }

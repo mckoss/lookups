@@ -142,7 +142,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                 }
                 next = {};
                 next[prop.slice(prefix.length)] = node[prop];
-                next[word.slice(prefix.length)] = 1;
+                this.addTerminal(next, word = word.slice(prefix.length));
                 delete node[prop];
                 node[prefix] = next;
                 this.wordCount++;
@@ -150,8 +150,24 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
 
             // No shared prefix.  Enter the word here as a terminal string.
-            node[word] = 1;
+            this.addTerminal(node, word);
             this.wordCount++;
+        },
+
+        // Add a terminal string to node.
+        // If 2 characters or less, just add with value == 1.
+        // If more than 2 characters, point to shared node
+        // Note - don't prematurely share suffixes - these
+        // terminals may become split and joined with other
+        // nodes in this part of the tree.
+        addTerminal: function(node, prop) {
+            if (prop.length <= 1) {
+                node[prop] = 1;
+                return;
+            }
+            var next = {};
+            node[prop[0]] = next;
+            this.addTerminal(next, prop.slice(1));
         },
 
         // Well ordered list of properties in a node (string or object properties)
