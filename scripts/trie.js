@@ -1,4 +1,4 @@
-namespace.lookup('org.startpad.trie').define(function(ns) {
+namespace.lookup('org.startpad.trie').define(function (ns) {
     /*
       org.startpad.trie - A JavaScript implementation of a Trie search datastructure.
 
@@ -27,7 +27,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
           '_c': A unique name for the node (starting from 1), used in combining Suffixes.
           '_n': Created when packing the Trie, the sequential node number
               (in pre-order traversal).
-          '_s': The number of times a node is shared (it's in-degree from other nodes).
+          '_d': The number of times a node is shared (it's in-degree from other nodes).
           '_v': Visited in DFS.
           '_g': For singleton nodes, the name of it's single property.
      */
@@ -78,14 +78,15 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         this.lastWord = '';
         this.suffixes = {};
         this.suffixCounts = {};
-        this._cNext = 1;
+        this.cNext = 1;
         this.wordCount = 0;
         this.insertWords(words);
+        this.vCur = 0;
     }
 
     Trie.methods({
         // Insert words from one big string, or from an array.
-        insertWords: function(words) {
+        insertWords: function (words) {
             var i;
 
             if (words == undefined) {
@@ -103,7 +104,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
         },
 
-        insert: function(word) {
+        insert: function (word) {
             this._insert(word, this.root);
             var lastWord = this.lastWord;
             this.lastWord = word;
@@ -119,7 +120,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             }
         },
 
-        _insert: function(word, node) {
+        _insert: function (word, node) {
             var i, prefix, next, prop;
 
             // Duplicate word entry - ignore
@@ -162,7 +163,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // Note - don't prematurely share suffixes - these
         // terminals may become split and joined with other
         // nodes in this part of the tree.
-        addTerminal: function(node, prop) {
+        addTerminal: function (node, prop) {
             if (prop.length <= 1) {
                 node[prop] = 1;
                 return;
@@ -175,7 +176,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // Well ordered list of properties in a node (string or object properties)
         // Use nodesOnly==true to return only properties of child nodes (not
         // terminal strings.
-        nodeProps: function(node, nodesOnly) {
+        nodeProps: function (node, nodesOnly) {
             var props = [];
             for (var prop in node) {
                 if (prop != '' && prop[0] != '_') {
@@ -188,15 +189,18 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
             return props;
         },
 
-        optimize: function() {
+        optimize: function () {
             var scores = [];
 
             this.combineSuffixNode(this.root);
+            this.prepDFS();
+            this.countDegree(this.root);
+            this.prepDFS();
             this.collapseChains(this.root);
         },
 
         // Convert Trie to a DAWG by sharing identical nodes
-        combineSuffixNode: function(node) {
+        combineSuffixNode: function (node) {
             // Frozen node - can't change.
             if (node._c) {
                 return node;
@@ -222,28 +226,48 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
 
             var shared = this.suffixes[sig];
             if (shared) {
-                if (!shared._s) {
-                    shared._s = 1;
-                }
-                shared._s++;
                 return shared;
             }
             this.suffixes[sig] = node;
-            node._c = this._cNext++;
+            node._c = this.cNext++;
             return node;
         },
 
-        // Remove intermediate singleton nodes by hoisting into their parent
-        collapseChains: function(node) {
-            return;
-            if (node._v) {
+        prepDFS: function () {
+            this.vCur++;
+        },
+
+        visited: function (node) {
+            if (node._v == this.vCur) {
+                return true;
+            }
+            node._v = this.vCur;
+        },
+
+        countDegree: function (node) {
+            if (node._d == undefined) {
+                node._d = 0;
+            }
+            node._d++;
+            if (this.visited(node)) {
                 return;
             }
-            node._v = true;
-            var props = this.nodeProps(node);
+            var props = this.nodeProps(node, true);
             for (var i = 0; i < props.length; i++) {
-                var prop = props[i];
-                var child = node[prop];
+                this.countDegree(node[props[i]]);
+            }
+        },
+
+        // Remove intermediate singleton nodes by hoisting into their parent
+        collapseChains: function (node) {
+            var prop, props, child, i;
+            if (this.visited(node)) {
+                return;
+            }
+            props = this.nodeProps(node);
+            for (i = 0; i < props.length; i++) {
+                prop = props[i];
+                child = node[prop];
                 if (typeof child != 'object') {
                     continue;
                 }
@@ -251,23 +275,26 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
                 // Hoist the singleton child's single property to the parent
                 if (child._g != undefined) {
                     delete node[prop];
-                    node[prop + child._g] = child[child._g];
+                    prop += child._g;
+                    node[prop] = child[child._g];
                 }
             }
-            if (props.length == 1 && node._s == undefined && !this.isTerminal(node)) {
-                node._g = this.nodeProps(node)[0];
+            // Hoist singletons and single-character nodes
+            if (props.length == 1 && !this.isTerminal(node) &&
+                (node._d == 1 || prop.length == 1)) {
+                node._g = prop;
             }
         },
 
-        isWord: function(word) {
+        isWord: function (word) {
             return this.isFragment(word, this.root);
         },
 
-        isTerminal: function(node) {
+        isTerminal: function (node) {
             return !!node[''];
         },
 
-        isFragment: function(word, node) {
+        isFragment: function (word, node) {
             if (word.length == 0) {
                 return this.isTerminal(node);
             }
@@ -334,7 +361,7 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // with a (relative!) line number of the node that string references.
         // Terminal strings (those without child node references) are
         // separated by '|' characters.
-        pack: function() {
+        pack: function () {
             var self = this;
             var nodes = [];
             var pos = 0;
@@ -392,11 +419,11 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
     }
 
     PackedTrie.methods({
-        isWord: function(word) {
+        isWord: function (word) {
             return this.isFragment(word, 0);
         },
 
-        isFragment: function(word, inode) {
+        isFragment: function (word, inode) {
             var node = this.nodes[inode];
 
             if (word.length == 0) {
@@ -418,12 +445,12 @@ namespace.lookup('org.startpad.trie').define(function(ns) {
         // Find a prefix of word in the packed node and return:
         // {dnode: number, terminal: boolean, prefix: string}
         // (or undefined in no word prefix found).
-        findNextNode: function(word, node) {
+        findNextNode: function (word, node) {
             if (node[0] == TERMINAL_PREFIX) {
                 node = node.slice(1);
             }
             var match;
-            node.replace(reNodePart, function(w, prefix, ref) {
+            node.replace(reNodePart, function (w, prefix, ref) {
                 // Already found a match - bail out eventually.
                 if (match) {
                     return;
