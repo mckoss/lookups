@@ -330,6 +330,8 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         pack: function () {
             var self = this;
             var nodes = [];
+            var syms = {};
+            var symCount;
             var pos = 0;
 
             // Make sure we've combined all the common suffixes
@@ -351,6 +353,11 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                         sep = ptrie.STRING_SEP;
                         continue;
                     }
+                    if (syms[node[prop]._n) {
+                        line += sep + prop + sys[node[prop]];
+                        sep = '';
+                        continue;
+                    }
                     var ref = ptrie.toAlphaCode(node._n - node[prop]._n - 1);
                     // Large reference to smaller string suffix -> duplicate suffix
                     if (node[prop]._g && ref.length >= node[prop]._g.length &&
@@ -366,7 +373,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                 return line;
             }
 
-            // Pre-order traversal, at max depth
+            // Topological sort into nodes array
             function numberNodes(node) {
                 if (node._n != undefined) {
                     return;
@@ -386,28 +393,57 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                 if (self.visited(node)) {
                     return;
                 }
-                if (node._d >= 3) {
-                    histAbs.add(node._n, node._d);
-                }
                 var props = self.nodeProps(node, true);
                 for (var i = 0; i < props.length; i++) {
                     var prop = props[i];
                     var ref = node._n - node[prop]._n - 1;
+                    // Count the number of single-character relative refs
                     if (ref < ptrie.BASE) {
                         histRel.add(ref);
                     }
+                    // Count the number of characters saved by converting an absolute
+                    // reference to a one-character symbol.
+                    histAbs.add(node[prop]._n, ptrie.toAlphaCode(ref).length - 1);
                     analyzeRefs(node[prop]);
                 }
             }
 
+            function symbolCount() {
+                histAbs = histAbs.highest(ptrie.BASE);
+                var savings = [0];
+                var best = 0, symCount = 0;
+                for (var numSyms = 1; numSyms <= ptrie.BASE; numSyms++) {
+                    if (histAbs[numSyms] == undefined) {
+                        break;
+                    }
+                    // Cumulative savings
+                    savings[numSyms] = histAbs[numSyms][1] -
+                                       histRel.countOf(ptrie.BASE - numSyms) +
+                                       savings[numSyms - 1];
+                    if (savings[numSyms] > best) {
+                        best = savings[numSyms];
+                        symCount = numSyms;
+                    }
+                }
+                return symCount;
+            }
+
             numberNodes(this.root, 0);
+
             this.prepDFS();
             analyzeRefs(this.root);
-            console.log(histAbs, histRel);
+            symCount = symbolCount();
+            var symDefs = [];
+            for (var sym = 0; sym < symCount; sym++) {
+                syms[histAbs[sym][0]] = ptrie.toAlphaCode(sym);
+                symDefs.push(ptrie.toAlphaCode(sym) + ':' +
+                             ptrie.toAlphaCode(histAbs[sym][0]));
+            }
+
             for (var i = 0; i < nodes.length; i++) {
                 nodes[i] = nodeLine(nodes[i]);
             }
-            return nodes.join(ptrie.NODE_SEP);
+            return symDefs.join(ptrie.NODE_SEP) + nodes.join(ptrie.NODE_SEP);
         }
     });
 
@@ -444,15 +480,23 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
             this.add(symNew, n);
         },
 
-        highest: function () {
-            this.sorted = [];
+        countOf: function (sym) {
+            this.init(sym);
+            return this.counts[sym];
+        },
+
+        highest: function (top) {
+            sorted = [];
             for (var sym in this.counts) {
-                this.sorted.push([sym, this.counts[sym]]);
+                sorted.push([sym, this.counts[sym]]);
             }
-            this.sorted.sort(function (a, b) {
+            sorted.sort(function (a, b) {
                 return b[1] - a[1];
             });
-            return this.sorted;
+            if (top) {
+                sorted = sorted.slice(0, top);
+            }
+            return sorted;
         }
     });
 
