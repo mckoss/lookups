@@ -273,15 +273,14 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                 }
                 this.collapseChains(child);
                 // Hoist the singleton child's single property to the parent
-                if (child._g != undefined) {
+                if (child._g != undefined && (child._d == 1 || child._g.length == 1)) {
                     delete node[prop];
                     prop += child._g;
                     node[prop] = child[child._g];
                 }
             }
             // Hoist singletons and single-character nodes
-            if (props.length == 1 && !this.isTerminal(node) &&
-                (node._d == 1 || prop.length == 1)) {
+            if (props.length == 1 && !this.isTerminal(node)) {
                 node._g = prop;
             }
         },
@@ -385,7 +384,11 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                         sep = STRING_SEP;
                         continue;
                     }
-                    line += sep + prop + (node._n - node[prop]._n);
+                    var ref = (node._n - node[prop]._n).toString();
+                    if (node[prop]._g && ref.length >= node[prop]._g.length) {
+                        ref = node[prop]._g;
+                    }
+                    line += sep + prop + ref;
                     sep = '';
                 }
 
