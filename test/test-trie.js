@@ -1,5 +1,6 @@
 namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
     var trieLib = namespace.lookup('org.startpad.trie');
+    var ptrieLib = namespace.lookup('org.startpad.trie.packed');
 
     var mark = 0;
 
@@ -92,8 +93,8 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
 
             for (var i = 0; i < tests.length; i++) {
                 var test = tests[i];
-                ut.assertEq(trieLib.toAlphaCode(test[0]), test[1]);
-                ut.assertEq(trieLib.fromAlphaCode(test[1]), test[0]);
+                ut.assertEq(ptrieLib.toAlphaCode(test[0]), test[1]);
+                ut.assertEq(ptrieLib.fromAlphaCode(test[1]), test[0]);
             }
         });
 
@@ -140,7 +141,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 }
                 console.log("pack: " + pack);
                 ut.assertEq(pack.split(';').length, test.nodeCount, "node count");
-                var ptrie = new trieLib.PackedTrie(pack);
+                var ptrie = new ptrieLib.PackedTrie(pack);
                 var testWords = words(test.dict);
                 for (j = 0; j < testWords.length; j++) {
                     ut.assert(ptrie.isWord(testWords[j]), testWords[j] + " is a word");

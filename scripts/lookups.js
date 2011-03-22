@@ -3,6 +3,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
     var dom = namespace.lookup('org.startpad.dom');
     var format = namespace.lookup('org.startpad.format');
     var trieLib = namespace.lookup('org.startpad.trie');
+    var ptrieLib = namespace.lookup('org.startpad.trie.packed');
     var client;
     var ptrie;
     var compact;
@@ -27,7 +28,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
         var dict = $(doc.dictionary).val();
         var trie = new trieLib.Trie(dict);
         compact = trie.pack();
-        ptrie = new trieLib.PackedTrie(compact);
+        ptrie = new ptrieLib.PackedTrie(compact);
         $(doc.output).text(compact.split(';').join('\n'));
         $(doc.size).text("Trie packed length = " + format.thousands(compact.length) +
                          " (dictionary length: " + format.thousands(dict.length) + ")");
