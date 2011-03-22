@@ -81,16 +81,19 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
 
     ns.addTests = function (ts) {
 
-        ts.addTest("toAlphaCode", function(ut) {
+        ts.addTest("AlphaCode", function(ut) {
             var tests = [
-                [0, 'A'], [1, 'B'], [2, 'C'], [25, 'Z'],
-                [26, 'AA'], [27, 'AB'],
-                [26 + 676, 'AAA']
+                [0, '0'], [1, '1'], [2, '2'], [9, '9'],
+                [10, 'A'], [11, 'B'], [12, 'C'], [35, 'Z'],
+                [36, '00'], [37, '01'],
+                [36 + 10 * 36, 'A0'], [46 + 10 * 36, 'AA'],
+                [36 + 36 * 36, '000']
             ];
 
             for (var i = 0; i < tests.length; i++) {
                 var test = tests[i];
                 ut.assertEq(trieLib.toAlphaCode(test[0]), test[1]);
+                ut.assertEq(trieLib.fromAlphaCode(test[1]), test[0]);
             }
         });
 

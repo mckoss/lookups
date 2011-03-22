@@ -55,20 +55,37 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         }
     }
 
-    // A, B, C, ..., AA, AB, AC, ..., AAA, AAB, ...
+    // 0, 1, 2, ..., A, B, C, ..., 00, 01, ... AA, AB, AC, ..., AAA, AAB, ...
     function toAlphaCode(n) {
-        var places, range, s = "";
+        var places, range, s = "", d, ch, base = 36;
 
-        for (places = 1, range = 26;
+        for (places = 1, range = base;
              n >= range;
-             n -= range, places++, range *= 26) {}
+             n -= range, places++, range *= base) {}
 
         while (places--) {
-            var d = n % 26;
-            s = String.fromCharCode(65 + d) + s;
-            n = (n - d) / 26;
+            d = n % base;
+            s = String.fromCharCode((d < 10 ? 48 : 55) + d) + s;
+            n = (n - d) / base;
         }
         return s;
+    }
+
+    function fromAlphaCode(s) {
+        var n = 0, places, range, base = 36, pow, i, d;
+
+        for (places = 1, range = base;
+             places < s.length;
+             n += range, places++, range *= base) {}
+
+        for (i = s.length - 1, pow = 1; i >= 0; i--, pow *= base) {
+            d = s.charCodeAt(i) - 48;
+            if (d > 10) {
+                d -= 7;
+            }
+            n += d * pow;
+        }
+        return n;
     }
 
     // Create a Trie data structure for searching for membership of strings
@@ -477,6 +494,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         'Trie': Trie,
         'PackedTrie': PackedTrie,
         'NODE_SEP': NODE_SEP,
-        'toAlphaCode': toAlphaCode
+        'toAlphaCode': toAlphaCode,
+        'fromAlphaCode': fromAlphaCode
     });
 });
