@@ -179,5 +179,21 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             }
         });
 
+        ts.addTest('Symbols', function(ut) {
+            var tests = [
+                ["0:4;a1q0;!b1;!c1;!d1;!e1;!f",
+                 ['a', 'ab', 'abc', 'abcd', 'abcde', 'abcdef',
+                  'q', 'qf']]
+            ];
+            for (var i = 0; i < tests.length; i++) {
+                var test = tests[i];
+                var ptrie = new ptrieLib.PackedTrie(test[0]);
+                for (var j = 0; i < test[1].length; i++) {
+                    var s = test[1][j];
+                    ut.assert(ptrie.isWord(s), s + " is a word");
+                }
+            }
+        });
+
     };
 });
