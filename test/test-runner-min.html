@@ -1,0 +1,27 @@
+<head>
+<title>Lookups Unit Tests</title>
+<script type="text/javascript"
+        src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+<script type="text/javascript" src="/lib/beta/js/utils.js"></script>
+<script type="text/javascript" src="/static/src/js/timer.js"></script>
+<script type="text/javascript" src="/static/src/js/unit.js"></script>
+<script type="text/javascript" src="/scripts/trie.js"></script>
+<script type="text/javascript" src="/scripts/ptrie.min.js"></script>
+<script type="text/javascript" src="test-trie.js"></script>
+</head>
+
+<body onload="run();">
+<h1 id="title"><script>document.write(document.title);</script></h1>
+
+<script>
+var unit = namespace.lookup('org.startpad.unit');
+
+function run() {
+    unit.runTests([namespace.org.startpad.trie.test]);
+}
+</script>
+
+<div id="divUnit" style="font-family: Courier;"></div>
+
+</body>
+</html>
