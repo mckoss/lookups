@@ -330,6 +330,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         pack: function () {
             var self = this;
             var nodes = [];
+            var nodeCount;
             var syms = {};
             var symCount;
             var pos = 0;
@@ -353,12 +354,12 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                         sep = ptrie.STRING_SEP;
                         continue;
                     }
-                    if (syms[node[prop]._n) {
-                        line += sep + prop + sys[node[prop]];
+                    if (syms[node[prop]._n]) {
+                        line += sep + prop + syms[node[prop]._n];
                         sep = '';
                         continue;
                     }
-                    var ref = ptrie.toAlphaCode(node._n - node[prop]._n - 1);
+                    var ref = ptrie.toAlphaCode(node._n - node[prop]._n - 1 + symCount);
                     // Large reference to smaller string suffix -> duplicate suffix
                     if (node[prop]._g && ref.length >= node[prop]._g.length &&
                         node[node[prop]._g] == 1) {
@@ -410,25 +411,35 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
 
             function symbolCount() {
                 histAbs = histAbs.highest(ptrie.BASE);
-                var savings = [0];
+                var savings = [];
+                savings[-1] = 0;
                 var best = 0, symCount = 0;
-                for (var numSyms = 1; numSyms <= ptrie.BASE; numSyms++) {
-                    if (histAbs[numSyms] == undefined) {
+                var defSize = 3 + ptrie.toAlphaCode(nodeCount).length;
+                for (var sym = 0; sym < ptrie.BASE; sym++) {
+                    if (histAbs[sym] == undefined) {
                         break;
                     }
-                    // Cumulative savings
-                    savings[numSyms] = histAbs[numSyms][1] -
-                                       histRel.countOf(ptrie.BASE - numSyms) +
-                                       savings[numSyms - 1];
-                    if (savings[numSyms] > best) {
-                        best = savings[numSyms];
-                        symCount = numSyms;
+                    // Cumulative savings of:
+                    //   saved characters in refs
+                    //   minus definition size
+                    //   minus relative size wrapping to 2 digits
+                    savings[sym] = histAbs[sym][1] - defSize -
+                                   histRel.countOf(ptrie.BASE - sym - 1) +
+                                   savings[sym - 1];
+                    console.log("savings[" + sym + "] " + savings[sym] + ' = ' +
+                                savings[sym - 1] + ' +' +
+                                histAbs[sym][1] + ' - ' + defSize + ' - ' +
+                                histRel.countOf(ptrie.BASE - sym - 1) + ')');
+                    if (savings[sym] >= best) {
+                        best = savings[sym];
+                        symCount = sym + 1;
                     }
                 }
                 return symCount;
             }
 
             numberNodes(this.root, 0);
+            nodeCount = nodes.length;
 
             this.prepDFS();
             analyzeRefs(this.root);
@@ -436,14 +447,19 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
             var symDefs = [];
             for (var sym = 0; sym < symCount; sym++) {
                 syms[histAbs[sym][0]] = ptrie.toAlphaCode(sym);
-                symDefs.push(ptrie.toAlphaCode(sym) + ':' +
-                             ptrie.toAlphaCode(histAbs[sym][0]));
             }
 
-            for (var i = 0; i < nodes.length; i++) {
+            for (var i = 0; i < nodeCount; i++) {
                 nodes[i] = nodeLine(nodes[i]);
             }
-            return symDefs.join(ptrie.NODE_SEP) + nodes.join(ptrie.NODE_SEP);
+
+            // Prepend symbols
+            for (sym = symCount - 1; sym >= 0; sym--) {
+                nodes.unshift(ptrie.toAlphaCode(sym) + ':' +
+                              ptrie.toAlphaCode(nodeCount - histAbs[sym][0]));
+            }
+
+            return nodes.join(ptrie.NODE_SEP);
         }
     });
 

@@ -23,10 +23,23 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     });
 
     var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9A-Z]+|$)", 'g');
+    var reSymbol = new RegExp("([0-9A-Z]+):([0-9A-Z]+)");
 
     // Implement isWord given a packed representation of a Trie.
     function PackedTrie(pack) {
         this.nodes = pack.split(NODE_SEP);
+        this.syms = [];
+        this.symCount = 0;
+
+        while (true) {
+            var m = reSymbol.exec(this.nodes[0]);
+            if (!m) {
+                break;
+            }
+            this.syms[fromAlphaCode(m[1])] = fromAlphaCode(m[2]);
+            this.symCount++;
+            this.nodes.shift();
+        }
     }
 
     PackedTrie.methods({
@@ -41,7 +54,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                 return node[0] == TERMINAL_PREFIX;
             }
 
-            var next = this.findNextNode(word, node);
+            var next = this.findNextNode(word, node, inode);
 
             if (next == undefined) {
                 return false;
@@ -56,7 +69,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         // Find a prefix of word in the packed node and return:
         // {dnode: number, terminal: boolean, prefix: string}
         // (or undefined in no word prefix found).
-        findNextNode: function (word, node) {
+        findNextNode: function (word, node, inode) {
             if (node[0] == TERMINAL_PREFIX) {
                 node = node.slice(1);
             }
@@ -77,6 +90,14 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                     match = {terminal: false, prefix: prefix, dnode: fromAlphaCode(ref) + 1};
                 }
             });
+            // Found a symbol - convert to dnode
+            if (match && match.dnode != undefined) {
+                if ((match.dnode - 1) < this.symCount) {
+                    match.dnode = this.syms[match.dnode - 1] - inode;
+                } else {
+                    match.dnode -= this.symCount;
+                }
+            }
             return match;
         }
     });
