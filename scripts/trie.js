@@ -296,7 +296,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                     node[prop] = child[child._g];
                 }
             }
-            // Hoist singletons and single-character nodes
+            // Identify singleton nodes
             if (props.length == 1 && !this.isTerminal(node)) {
                 node._g = prop;
             }
@@ -402,9 +402,10 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                         continue;
                     }
                     var ref = toAlphaCode(node._n - node[prop]._n - 1);
-                    if (node[prop]._g && ref.length >= node[prop]._g.length) {
+                    // Large reference to smaller string suffix -> duplicate suffix
+                    if (node[prop]._g && ref.length >= node[prop]._g.length &&
+                        node[node[prop]._g] == 1) {
                         ref = node[prop]._g;
-                        // REVIEW: Not needed if _g ends in reference!
                         sep = STRING_SEP;
                         continue;
                     }
