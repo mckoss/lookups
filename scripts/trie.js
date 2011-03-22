@@ -404,6 +404,9 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                     var ref = toAlphaCode(node._n - node[prop]._n - 1);
                     if (node[prop]._g && ref.length >= node[prop]._g.length) {
                         ref = node[prop]._g;
+                        // REVIEW: Not needed if _g ends in reference!
+                        sep = STRING_SEP;
+                        continue;
                     }
                     line += sep + prop + ref;
                     sep = '';
