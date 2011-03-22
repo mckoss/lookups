@@ -30,14 +30,14 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
          nonWords: ['cas'],
          nodeCount: 2},
         {dict: "cat bat",
-         pack: "b1c1;at",
+         pack: "b0c0;at",
          nodeCount: 2},
         {dict: "a ab abc",
          nodeCount: 3,
-         pack: "a1;!b1;!c"},
+         pack: "a0;!b0;!c"},
         {dict: "this is a test",
          wordCount: 4,
-         pack: "a,is,t1;est,his",
+         pack: "a,is,t0;est,his",
          nonWords: ['t', 'te', 'tes'],
          nodeCount: 2},
         {dict: "them the",
@@ -63,20 +63,20 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
         {dict: "bat bats cat cats dog dogs fish fishing dogging",
          wordCount: 9,
          nonWords: ['ing', 's', 'cating', 'doging'],
-         pack: "b4c4dog2fish1;!i2;!gi1s;ng;at1;!s",
+         pack: "b3c3dog1fish0;!i1;!gi0s;ng;at0;!s",
          nodeCount: 6},
         {dict: "tap taps top tops cap caps cop cops",
          nonWords: ['c', 'ap'],
          nodeCount: 3,
-         pack: "c1t1;ap1op1;!s"},
+         pack: "c0t0;ap0op0;!s"},
         {dict: "bing sing ding ring",
          nonWords: ['b', 'ing'],
          nodeCount: 2,
-         pack: "b1d1r1s1;ing"},
+         pack: "b0d0r0s0;ing"},
         {dict: "bing sing ding ring bad sad dad rad",
          nonWords: ['b', 'ing', 'ad'],
          nodeCount: 2,
-         pack: "b1d1r1s1;ad,ing"}
+         pack: "b0d0r0s0;ad,ing"}
     ];
 
     ns.addTests = function (ts) {
@@ -125,7 +125,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
 
         ts.addTest('trie.pack', function(ut) {
             var trie = new trieLib.Trie("aah aahed aahing aahs aal");
-            ut.assertEq(trie.pack(), "aa1;h1l;!ed,ing,s");
+            ut.assertEq(trie.pack(), "aa0;h0l;!ed,ing,s");
         });
 
         ts.addTest('PackedTrie', function(ut) {

@@ -37,7 +37,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         STRING_SEP = ',',
         TERMINAL_PREFIX = '!';
 
-    var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9]+|$)", 'g');
+    var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9A-Z]+|$)", 'g');
 
     function commonPrefix(w1, w2) {
         var maxlen = Math.min(w1.length, w2.length);
@@ -401,7 +401,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                         sep = STRING_SEP;
                         continue;
                     }
-                    var ref = (node._n - node[prop]._n).toString();
+                    var ref = toAlphaCode(node._n - node[prop]._n - 1);
                     if (node[prop]._g && ref.length >= node[prop]._g.length) {
                         ref = node[prop]._g;
                     }
@@ -483,7 +483,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                     return;
                 }
                 if (prefix == word.slice(0, prefix.length)) {
-                    match = {terminal: false, prefix: prefix, dnode: parseInt(ref)};
+                    match = {terminal: false, prefix: prefix, dnode: fromAlphaCode(ref) + 1};
                 }
             });
             return match;
