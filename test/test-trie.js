@@ -98,6 +98,30 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             }
         });
 
+        ts.addTest("Histogram", function (ut) {
+            var hist;
+            var tests = [
+                [[], []],
+                [['a', 'b', 'c'], [['a', 1], ['b', 1], ['c', 1]]],
+                [['a', 'b', 'b'], [['b', 2], ['a', 1]]]
+            ];
+            for (var i = 0; i < tests.length; i++) {
+                var test = tests[i];
+                hist = new trieLib.Histogram();
+                for (var j = 0; j < test[0].length; j++) {
+                    hist.add(test[0][j]);
+                }
+                ut.assertEq(hist.highest(), test[1]);
+            }
+
+            hist = new trieLib.Histogram();
+            hist.add('a');
+            hist.add('b');
+            hist.add('a');
+            hist.change('b', 'a');
+            ut.assertEq(hist.highest(), [['b', 2], ['a', 1]]);
+        });
+
         ts.addTest("Trie", function(ut) {
             var i, j;
 

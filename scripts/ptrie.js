@@ -9,7 +9,8 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     */
     var NODE_SEP = ';',
         STRING_SEP = ',',
-        TERMINAL_PREFIX = '!';
+        TERMINAL_PREFIX = '!',
+        BASE = 36;
 
     ns.extend({
         'PackedTrie': PackedTrie,
@@ -17,7 +18,8 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         'STRING_SEP': STRING_SEP,
         'TERMINAL_PREFIX': TERMINAL_PREFIX,
         'toAlphaCode': toAlphaCode,
-        'fromAlphaCode': fromAlphaCode
+        'fromAlphaCode': fromAlphaCode,
+        'BASE': BASE
     });
 
     var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9A-Z]+|$)", 'g');
@@ -81,28 +83,28 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
 
     // 0, 1, 2, ..., A, B, C, ..., 00, 01, ... AA, AB, AC, ..., AAA, AAB, ...
     function toAlphaCode(n) {
-        var places, range, s = "", d, ch, base = 36;
+        var places, range, s = "", d, ch;
 
-        for (places = 1, range = base;
+        for (places = 1, range = BASE;
              n >= range;
-             n -= range, places++, range *= base) {}
+             n -= range, places++, range *= BASE) {}
 
         while (places--) {
-            d = n % base;
+            d = n % BASE;
             s = String.fromCharCode((d < 10 ? 48 : 55) + d) + s;
-            n = (n - d) / base;
+            n = (n - d) / BASE;
         }
         return s;
     }
 
     function fromAlphaCode(s) {
-        var n = 0, places, range, base = 36, pow, i, d;
+        var n = 0, places, range, pow, i, d;
 
-        for (places = 1, range = base;
+        for (places = 1, range = BASE;
              places < s.length;
-             n += range, places++, range *= base) {}
+             n += range, places++, range *= BASE) {}
 
-        for (i = s.length - 1, pow = 1; i >= 0; i--, pow *= base) {
+        for (i = s.length - 1, pow = 1; i >= 0; i--, pow *= BASE) {
             d = s.charCodeAt(i) - 48;
             if (d > 10) {
                 d -= 7;

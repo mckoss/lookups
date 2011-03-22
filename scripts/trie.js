@@ -34,7 +34,8 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
     var ptrie = namespace.lookup('org.startpad.trie.packed');
 
     ns.extend({
-        'Trie': Trie
+        'Trie': Trie,
+        'Histogram': Histogram
     });
 
     // Create a Trie data structure for searching for membership of strings
@@ -302,7 +303,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         //
         // Each node of the Trie is output on a single line.
         //
-        // For example:
+        // For example Trie("the them there thesis this"):
         // {
         //    "th": {
         //      "is": 1,
@@ -314,18 +315,18 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         //      }
         //    }
         //  }
+        //
         // Would be reperesented as:
         //
-        //
-        // th1
-        // is,e1
+        // th0
+        // e0is
         // !m,re,sis
         //
         // The line begins with a '!' iff it is a terminal node of the Trie.
         // For each string property in a node, the string is listed, along
         // with a (relative!) line number of the node that string references.
         // Terminal strings (those without child node references) are
-        // separated by '|' characters.
+        // separated by ',' characters.
         pack: function () {
             var self = this;
             var nodes = [];
@@ -378,7 +379,31 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                 nodes.unshift(node);
             }
 
+            var histAbs = new Histogram();
+            var histRel = new Histogram();
+
+            function analyzeRefs(node) {
+                if (self.visited(node)) {
+                    return;
+                }
+                if (node._d >= 3) {
+                    histAbs.add(node._n, node._d);
+                }
+                var props = self.nodeProps(node, true);
+                for (var i = 0; i < props.length; i++) {
+                    var prop = props[i];
+                    var ref = node._n - node[prop]._n - 1;
+                    if (ref < ptrie.BASE) {
+                        histRel.add(ref);
+                    }
+                    analyzeRefs(node[prop]);
+                }
+            }
+
             numberNodes(this.root, 0);
+            this.prepDFS();
+            analyzeRefs(this.root);
+            console.log(histAbs, histRel);
             for (var i = 0; i < nodes.length; i++) {
                 nodes[i] = nodeLine(nodes[i]);
             }
@@ -391,6 +416,45 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
         for (var i = 0; i < maxlen && w1[i] == w2[i]; i++) {}
         return w1.slice(0, i);
     }
+
+    function Histogram() {
+        this.counts = {};
+    }
+
+    Histogram.methods({
+        init: function (sym) {
+            if (this.counts[sym] == undefined) {
+                this.counts[sym] = 0;
+            }
+        },
+
+        add: function (sym, n) {
+            if (n == undefined) {
+                n = 1;
+            }
+            this.init(sym);
+            this.counts[sym] += n;
+        },
+
+        change: function (symNew, symOld, n) {
+            if (n == undefined) {
+                n = 1;
+            }
+            this.add(symOld, -n);
+            this.add(symNew, n);
+        },
+
+        highest: function () {
+            this.sorted = [];
+            for (var sym in this.counts) {
+                this.sorted.push([sym, this.counts[sym]]);
+            }
+            this.sorted.sort(function (a, b) {
+                return b[1] - a[1];
+            });
+            return this.sorted;
+        }
+    });
 
     /* Sort elements and remove duplicates from array (modified in place) */
     function unique(a) {
