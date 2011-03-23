@@ -456,7 +456,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
             // Prepend symbols
             for (sym = symCount - 1; sym >= 0; sym--) {
                 nodes.unshift(ptrie.toAlphaCode(sym) + ':' +
-                              ptrie.toAlphaCode(nodeCount - histAbs[sym][0]));
+                              ptrie.toAlphaCode(nodeCount - histAbs[sym][0] - 1));
             }
 
             return nodes.join(ptrie.NODE_SEP);
