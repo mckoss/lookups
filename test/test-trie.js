@@ -195,5 +195,59 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             }
         });
 
+        ts.addTest("Big Dict", function(ut) {
+            var word, i, trie, ptrie, pack;
+            var words = ['almond', 'almonds', 'as', 'the', 'and',
+                         'battle', 'battles'];
+
+            $.ajax('/dicts/ospd3.txt', {
+                success: function (result) {
+                    trie = new trieLib.Trie(result);
+                    ut.assertEq(trie.wordCount, 80612, "word count");
+                    pack = trie.pack();
+                    ut.assert(pack.length < 181000, "pack size over 181K");
+
+                    ptrie = new ptrieLib.PackedTrie(pack);
+                    ut.assertEq(ptrie.nodes.length, 15936, "node count");
+                    ut.assertEq(ptrie.symCount, 28, "symbol count");
+
+                    for (i = 0; i < words.length; i++) {
+                        word = words[i];
+                        ut.assert(trie.isWord(word), word + " in Trie");
+                        ut.assert(ptrie.isWord(word), word + " in PackedTrie");
+                    }
+
+                    // Test a sampling of 1% of words in the dictionary
+                    words = result.split('\n');
+                    ut.assertEq(words[words.length - 1], '');
+                    words.pop();
+                    ut.assertEq(words.length, 80612, "dictionary assumed length");
+
+                    var msStart = new Date().getTime();
+                    for (i = 0; i < words.length; i += 100) {
+                        word = words[i];
+                        ut.assert(trie.isWord(word), word + " in Trie");
+                    }
+                    var calls = 0;
+                    msTrie = new Date().getTime();
+                    for (i = 0; i < words.length; i += 100) {
+                        word = words[i];
+                        ut.assert(ptrie.isWord(word), word + " in PackedTrie");
+                        calls++;
+                    }
+                    msPTrie = new Date().getTime();
+
+                    console.log("Trie lookup avg: " +
+                                (msTrie - msStart) / calls);
+                    console.log("PackedTrie lookup avg: " +
+                                (msPTrie - msTrie) / calls);
+
+
+                    ut.async(false);
+                }
+            });
+
+        }).async();
+
     };
 });
