@@ -20,7 +20,6 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     var ptrie;
     var words;
     var tasks = [];
-    var timedResults = {};
     var doc;                            // Bound elements here
     var DOCID = 'perf-test';
     var BLOBID = 'results3';
@@ -44,13 +43,13 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     }
 
     function timedTasks(tasks, fn) {
-        var iNext = 0, msLast;
+        var iNext = 0, msStart;
 
         function next() {
             if (iNext != 0) {
-                var time = new Date().getTime() - msLast;
+                var time = new Date().getTime() - msStart;
                 task = tasks[iNext - 1];
-                timedResults[task.key] = time;
+                task.time = time;
                 log("Complete: " + task.message + ' (' + format.thousands(time) + ' ms)');
             }
             if (iNext >= tasks.length) {
@@ -59,16 +58,9 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
             }
 
             task = tasks[iNext++];
-            msLast = new Date().getTime();
+            msStart = new Date().getTime();
             log("Starting: " + task.message);
-            if (!task.fn(serialized)) {
-                serialized();
-            }
-        }
-
-        // Run on a timeout - especially so dom can update while running
-        function serialized() {
-            setTimeout(next, 0);
+            setTimeout(function() { task.fn(next); }, 0);
         }
 
         next();
@@ -81,43 +73,44 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
 
     task('dict-load',
          "Load Dictionary",
-         function (fn) {
+         function (next) {
              $.ajax('/dicts/ospd3.txt', {success: function (result) {
                  rawDictionary = result;
                  words = rawDictionary.split('\n');
-                 fn();
+                 next();
              }});
-             return true;
          });
 
     task('ptrie-load', "Load Packed Trie File",
-         function (fn) {
+         function (next) {
              $.ajax('/dicts/ospd3.trie.txt', {success: function (result) {
                  ptrie = new ptrieLib.PackedTrie(result);
-                 fn();
+                 next();
              }});
-             return true;
          });
 
     task('ptrie-lookups', "Lookup 1,000 words in PackedTrie",
-         function (fn) {
+         function (next) {
              var skip = Math.floor(words.length / 1000);
              for (var i = 0; i < words.length; i += skip) {
                  ptrie.isWord(words[i]);
              }
+             next();
          });
 
     task('trie-create', "Create Trie From Full Dictionary",
-         function (fn) {
+         function (next) {
              trie = new trieLib.Trie(rawDictionary);
+             next();
          });
 
     task('trie-lookups', "Lookup 1,000 words in Trie",
-         function (fn) {
+         function (next) {
              var skip = Math.floor(words.length / 1000);
              for (var i = 0; i < words.length; i += skip) {
                  trie.isWord(words[i]);
              }
+             next();
          });
 
     function getDocid() {
@@ -183,15 +176,23 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     }
 
     function saveResults() {
-        timedResults.browser = browser;
-        timedResults.userAgent = navigator.userAgent;
-        timedResults.date = new Date();
+        var results = {};
+
+        results.browser = browser;
+        results.userAgent = navigator.userAgent;
+        results.date = new Date();
+
+        for (var i = 0; i < tasks.length; i++) {
+            var task = tasks[i];
+            results[tasks.key] = task.time;
+        }
+
         if (client.username) {
-            client.storage.push(DOCID, BLOBID, timedResults, undefined, function() {
+            client.storage.push(DOCID, BLOBID, results, undefined, function() {
                 log("Results Saved");
             });
         } else {
-            log("Signin to Pageforest to have your results recorded!");
+            log("Results not recorded (not signed in).");
         }
     }
 
