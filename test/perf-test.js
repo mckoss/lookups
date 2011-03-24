@@ -39,7 +39,7 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     }
 
     function log(s) {
-        $(doc.log).append('<li>' + format.escapeHTML(s) + '</li>');
+        $(doc.log).append('<li>' + s + '</li>');
     }
 
     function timedTasks(tasks, fn) {
@@ -50,7 +50,7 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
                 var time = new Date().getTime() - msStart;
                 task = tasks[iNext - 1];
                 task.time = time;
-                log("Complete: " + task.message + ' (' + format.thousands(time) + ' ms)');
+                $('#time-' + task.key).text('(' + format.thousands(time) + ' ms)');
             }
             if (iNext >= tasks.length) {
                 fn();
@@ -59,7 +59,7 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
 
             task = tasks[iNext++];
             msStart = new Date().getTime();
-            log("Starting: " + task.message);
+            log(task.message + ' <span id="time-' + task.key + '">...</span>');
             setTimeout(function() { task.fn(next); }, 0);
         }
 
