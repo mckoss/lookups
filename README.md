@@ -1,10 +1,11 @@
 Exploration of different dictionary lookup techniques for
 client-side JavaScript.
 
-Inspired by two blog posts by John Resig:
+Inspired by several blog posts by John Resig:
 
 - [Dictionary Lookups in JavaScript]
 - [JavaScript Trie Performance Analysis]
+- [Revised JavaScript Dictionary Search]
 
 You can try out hosted version of this software at:
 
@@ -103,3 +104,4 @@ so we eke out a bit more space by not ignoring leading zeros.
   [Unit Tests]: http://lookups.pageforest.com/test/test-runner.html
   [Dictionary Lookups in JavaScript]: http://ejohn.org/blog/dictionary-lookups-in-javascript/
   [JavaScript Trie Performance Analysis]:  http://ejohn.org/blog/javascript-trie-performance-analysis/
+  [Revised JavaScript Dictionary Search]: http://ejohn.org/blog/revised-javascript-dictionary-search/
