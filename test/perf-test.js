@@ -10,7 +10,8 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         'onReady': onReady,
         'getDoc': getDoc,
         'getDocid': getDocid,
-        'setDocid': function () {}
+        'setDocid': function () {},
+        'onUserChange': onUserChange
     });
 
     var client;
@@ -131,6 +132,10 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
             blob: {version: 1},
             readers: ['public']
         };
+    }
+
+    function onUserChange(username) {
+        $(doc['signin'])[username ? 'hide' : 'show']();
     }
 
 
