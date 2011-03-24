@@ -22,7 +22,7 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     var timedResults = {};
     var doc;                            // Bound elements here
     var DOCID = 'perf-test';
-    var BLOBID = 'results';
+    var BLOBID = 'results2';
 
     function handleAppCache() {
         if (typeof applicationCache == 'undefined') {
@@ -127,10 +127,10 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     }
 
     function saveResults() {
-        result.browser = base.project(navigator, ['appVersion', 'platform', 'vendor']);
-        result.date = new Date();
+        timedResults.browser = base.project(navigator, ['appVersion', 'platform', 'vendor']);
+        timedResults.date = new Date();
         if (client.username) {
-            client.storage.push(DOCID, BLOBID, result, undefined, function() {
+            client.storage.push(DOCID, BLOBID, timedResults, undefined, function() {
                 log("Results Saved");
             });
         } else {
