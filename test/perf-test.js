@@ -60,7 +60,15 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
             task = tasks[iNext++];
             msStart = new Date().getTime();
             log(task.message + ' <span id="time-' + task.key + '">...</span>');
-            setTimeout(function() { task.fn(next); }, 0);
+            setTimeout(function() {
+                try {
+                    task.fn(next);
+                } catch (e) {
+                    task.time = "NA";
+                    $('#time-' + task.key).text('NA');
+                    log("Tests terminated.");
+                }
+            }, 0);
         }
 
         next();
