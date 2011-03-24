@@ -199,6 +199,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             var word, i, trie, ptrie, pack;
             var words = ['almond', 'almonds', 'as', 'the', 'and',
                          'battle', 'battles'];
+            var ms, msLast;
 
             $.ajax('/dicts/ospd3.txt', {
                 success: function (result) {
@@ -223,24 +224,33 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                     words.pop();
                     ut.assertEq(words.length, 80612, "dictionary assumed length");
 
-                    var msStart = new Date().getTime();
+                    msLast = new Date().getTime();
+                    var calls = 0;
                     for (i = 0; i < words.length; i += 100) {
                         word = words[i];
                         ut.assert(trie.isWord(word), word + " in Trie");
+                        calls++;
                     }
-                    var calls = 0;
-                    msTrie = new Date().getTime();
+                    ms = new Date().getTime();
+                    console.log("Calls: " + calls);
+                    console.log("Trie lookup avg: " +
+                                (ms - msLast) / calls);
+                    msLast = ms;
                     for (i = 0; i < words.length; i += 100) {
                         word = words[i];
                         ut.assert(ptrie.isWord(word), word + " in PackedTrie");
-                        calls++;
                     }
-                    msPTrie = new Date().getTime();
+                    ms = new Date().getTime();
 
-                    console.log("Trie lookup avg: " +
-                                (msTrie - msStart) / calls);
                     console.log("PackedTrie lookup avg: " +
-                                (msPTrie - msTrie) / calls);
+                                (ms - msLast) / calls);
+
+                    msLast = ms;
+                    for (i = 0; i < 1000; i++) {
+                        ptrie.isWord('battle');
+                    }
+                    ms = new Date().getTime();
+                    console.log("battle: " + (ms - msLast) / 1000);
 
 
                     ut.async(false);
