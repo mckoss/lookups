@@ -48,3 +48,25 @@ textarea {
     margin: 10px 0;
     text-align:center;
 }
+
+table {
+    border-collapse: collapse;
+    border: 1px solid #36362E;
+    margin: 0 0 8px 0;
+}
+
+th {
+    border: 1px solid #36362E;
+    padding: 5px;
+    text-style: bold;
+    color: white;
+    background-color: #69695A;
+    text-align: center;
+}
+
+td {
+    border: 1px solid #36362E;
+    padding: 5px;
+    background-color: #F5F5DC;
+    text-align: center;
+}

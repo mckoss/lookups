@@ -21,9 +21,11 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     var ptrie;
     var words;
     var tasks = [];
+    var columnKeys;
     var doc;                            // Bound elements here
+    var seq = 1;
     var DOCID = 'perf-test';
-    var BLOBID = 'results3';
+    var BLOBID = 'results-4';
 
     function handleAppCache() {
         if (typeof applicationCache == 'undefined') {
@@ -46,12 +48,14 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     function timedTasks(tasks, fn) {
         var iNext = 0, msStart;
 
+        seq++;
+
         function next() {
             if (iNext != 0) {
                 var time = new Date().getTime() - msStart;
                 task = tasks[iNext - 1];
                 task.time = time;
-                $('#time-' + task.key).text('(' + format.thousands(time) + ' ms)');
+                $('#time-' + task.key + seq).text('(' + format.thousands(time) + ' ms)');
             }
             if (iNext >= tasks.length) {
                 fn();
@@ -60,13 +64,13 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
 
             task = tasks[iNext++];
             msStart = new Date().getTime();
-            log(task.message + ' <span id="time-' + task.key + '">...</span>');
+            log(task.message + ' <span id="time-' + task.key + seq + '">...</span>');
             setTimeout(function() {
                 try {
                     task.fn(next);
                 } catch (e) {
                     task.time = "NA";
-                    $('#time-' + task.key).text('NA');
+                    $('#time-' + task.key).text('NA - ' + e.message);
                     log("Tests terminated.");
                 }
             }, 0);
@@ -130,7 +134,8 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         return {
             docid: DOCID,
             blob: {version: 1},
-            readers: ['public']
+            readers: ['public'],
+            writers: ['public']
         };
     }
 
@@ -188,25 +193,69 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         return null;
     }
 
-    function saveResults() {
-        var results = {};
+    // Make a row of data for an html table
+    function row(values, tag) {
+        var html = "<tr>";
 
-        results.browser = browser;
-        results.userAgent = navigator.userAgent;
-        results.date = new Date();
+        if (tag == undefined) {
+            tag = 'td';
+        }
+
+        for (var i = 0; i < values.length; i++) {
+            var value = values[i];
+            if (typeof value == 'number') {
+                value = format.thousands(value);
+            } else if (value == undefined) {
+                value = '';
+            }
+            html += '<' + tag + '>' + value + '</' + tag + '>';
+        }
+
+        html += "</tr>";
+        return html;
+    }
+
+    function mapProp(list, prop) {
+        var result = [];
+        for (var i = 0; i < list.length; i++) {
+            result.push(list[i][prop]);
+        }
+        return result;
+    }
+
+    function values(map, props) {
+        var result = [];
+        for (var i = 0; i < props.length; i++) {
+            result.push(map[props[i]]);
+        }
+        return result;
+    }
+
+    function loadResults() {
+        client.storage.getBlob(DOCID, BLOBID, undefined, function (results) {
+            for (var i = 0; i < results.length; i++) {
+                $(doc.data).prepend(row(values(results[i], columnKeys)));
+            }
+        });
+    }
+
+    function saveResults() {
+        var result = {};
+
+        result.browser = browser;
+        result.username = client.username || 'anonymous';
+        result.userAgent = navigator.userAgent;
+        result.date = new Date();
 
         for (var i = 0; i < tasks.length; i++) {
             var task = tasks[i];
-            results[tasks.key] = task.time;
+            result[task.key] = task.time;
         }
 
-        if (client.username) {
-            client.storage.push(DOCID, BLOBID, results, undefined, function() {
-                log("Results Saved");
-            });
-        } else {
-            log("Results not recorded (not signed in).");
-        }
+        client.storage.push(DOCID, BLOBID, result, undefined, function() {
+            log("Results Saved");
+            $(doc.data).prepend(row(values(result, columnKeys)));
+        });
     }
 
     function onReady() {
@@ -217,6 +266,12 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         client.addAppBar();
 
         $(doc.browser).text(browser);
+
+        columnKeys = ['browser', 'username'].concat(mapProp(tasks, 'key'));
+
+        $(doc.headings).append(row(['Browser', 'User'].concat(mapProp(tasks, 'key')), 'th'));
+
+        loadResults();
 
         $(doc.run).click(function () {
             timedTasks(tasks, saveResults);
