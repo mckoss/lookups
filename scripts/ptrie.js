@@ -111,10 +111,10 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             }
 
             function catchWords(word) {
-                words.push(word);
-                if (limit && limit >= list.length) {
+                if (words.length >= limit) {
                     return true;
                 }
+                words.push(word);
             }
 
             this.enumerate(from, beyond, catchWords, 0, '');
@@ -127,32 +127,33 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             var self = this;
 
             if (node[0] == TERMINAL_PREFIX) {
-                if (from == '' && fn(prefix)) {
-                    return;
+                if (from <= prefix && prefix < beyond && fn(prefix)) {
+                    return false;
                 }
                 node = node.slice(1);
             }
 
             node.replace(reNodePart, function (w, str, ref) {
-                var isTerminal, fullMatch, inode,
-                    match = prefix + str;
+                var match = prefix + str;
 
-                // Ignore strings outside our enumeration scope
-                if (cont && (match < from || match >= beyond)) {
+                // Done or no possible future match from str
+                if (!cont || match >= beyond || match < from.slice(0, match.length)) {
                     return;
                 }
 
-                isTerminal = ref == STRING_SEP || ref == '';
+                var isTerminal = ref == STRING_SEP || ref == '';
 
                 if (isTerminal) {
-                    if (!fn(match)) {
+                    if (from <= match && match < beyond && fn(match)) {
                         cont = false;
                     }
                     return;
                 }
 
-                this.enumerate(from, beyond, fn, self.inodeFromRef(ref), match);
+                cont = self.enumerate(from, beyond, fn, self.inodeFromRef(ref, inode), match);
             });
+
+            return cont;
         },
 
         // References are either absolute (symbol) or relative (1 - based)
@@ -172,6 +173,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             var asc = s.charCodeAt(s.length - 1);
             return s.slice(0, -1) + String.fromCharCode(asc + 1);
         },
+
 
         // Find a prefix of word in the packed node and return the common prefix.
         // {inode: number, terminal: boolean, prefix: string}

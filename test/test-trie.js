@@ -2,6 +2,8 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
     var trieLib = namespace.lookup('org.startpad.trie');
     var ptrieLib = namespace.lookup('org.startpad.trie.packed');
 
+    ns.coverageTargets = [trieLib, ptrieLib];
+
     var mark = 0;
 
     function countNodes(node) {
@@ -163,7 +165,6 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 if (test.pack) {
                     ut.assertEq(pack, test.pack);
                 }
-                console.log("pack: " + pack);
                 ut.assertEq(pack.split(';').length, test.nodeCount, "node count");
                 var ptrie = new ptrieLib.PackedTrie(pack);
                 var testWords = words(test.dict);
@@ -214,16 +215,16 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             ut.assertEq(ptrie.beyond(''), ptrie.max());
             ut.assertEq(ptrie.beyond('z'), '{');
 
-            ut.assertEq(ptrie.enumerate(), ['cat', 'cats', 'dog', 'dogs',
+            ut.assertEq(ptrie.words(), ['cat', 'cats', 'dog', 'dogs',
                                             'hi', 'hit', 'hither', 'rat', 'rats']);
-            ut.assertEq(ptrie.enumerate('c'), ['cat', 'cats']);
-            ut.assertEq(ptrie.enumerate('cat'), ['cats']);
-            ut.assertEq(ptrie.enumerate('ca', ptrie.beyond('cats')), ['cat', 'cats']);
-            ut.assertEq(ptrie.enumerate('', 'cats'), ['cat']);
-            ut.assertEq(ptrie.enumerate('c', 'e'), ['cat', 'cats', 'dog', 'dogs']);
-            ut.assertEq(ptrie.enumerate('hi', 'hj'));
+            ut.assertEq(ptrie.words('c'), ['cat', 'cats']);
+            ut.assertEq(ptrie.words('cat'), ['cat', 'cats']);
+            ut.assertEq(ptrie.words('ca', ptrie.beyond('cats')), ['cat', 'cats']);
+            ut.assertEq(ptrie.words('', 'cats'), ['cat']);
+            ut.assertEq(ptrie.words('c', 'e'), ['cat', 'cats', 'dog', 'dogs']);
+            ut.assertEq(ptrie.words('hi', 'hj'), ['hi', 'hit', 'hither']);
 
-            ut.assertEq(ptrie.enumerate('c', 'e', 2), ['cat', 'cats']);
+            ut.assertEq(ptrie.words('c', 'e', 2), ['cat', 'cats']);
         });
 
         ts.addTest("Big Dict", function(ut) {
@@ -275,14 +276,6 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
 
                     console.log("PackedTrie lookup avg: " +
                                 (ms - msLast) / calls);
-
-                    msLast = ms;
-                    for (i = 0; i < 1000; i++) {
-                        ptrie.isWord('battle');
-                    }
-                    ms = new Date().getTime();
-                    console.log("battle: " + (ms - msLast) / 1000);
-
 
                     ut.async(false);
                 }
