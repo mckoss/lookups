@@ -195,6 +195,37 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             }
         });
 
+        ts.addTest("PackedTrie match", function(ut) {
+            var trie = new trieLib.Trie("cat cats dog dogs rat rats hi hit hither");
+            var ptrie = new ptrieLib.PackedTrie(trie.pack());
+
+            ut.assertEq(ptrie.match("catjzkd"), ['cat']);
+            ut.assertEq(ptrie.match("jzkdy"), undefined);
+            ut.assertEq(ptrie.match("jcatzkd"), undefined);
+            ut.assertEq(ptrie.match("hitherandyon"), ['hi', 'hit', 'hither']);
+        });
+
+        ts.addTest("PackedTrie enumerate", function (ut) {
+            var trie = new trieLib.Trie("cat cats dog dogs rat rats hi hit hither");
+            var ptrie = new ptrieLib.PackedTrie(trie.pack());
+
+            ut.assertEq(ptrie.max(), 'ratt');
+            ut.assertEq(ptrieLib.beyond('foobar'), 'foobas');
+            ut.assertEq(ptrieLib.beyond(''), 'a');
+            ut.assertEq(ptrieLib.beyond('z'), '{');
+
+            ut.assertEq(ptrie.enumerate(), ['cat', 'cats', 'dog', 'dogs',
+                                            'hi', 'hit', 'hither', 'rat', 'rats']);
+            ut.assertEq(ptrie.enumerate('c'), ['cat', 'cats']);
+            ut.assertEq(ptrie.enumerate('cat'), ['cats']);
+            ut.assertEq(ptrie.enumerate('ca', ptrieLib.beyond('cats')), ['cat', 'cats']);
+            ut.assertEq(ptrie.enumerate('', 'cats'), ['cat']);
+            ut.assertEq(ptrie.enumerate('c', 'e'), ['cat', 'cats', 'dog', 'dogs']);
+            ut.assertEq(ptrie.enumerate('hi', 'hj'));
+
+            ut.assertEq(ptrie.enumerate('c', 'e', 2), ['cat', 'cats']);
+        });
+
         ts.addTest("Big Dict", function(ut) {
             var word, i, trie, ptrie, pack;
             var words = ['almond', 'almonds', 'as', 'the', 'and',
@@ -257,7 +288,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 }
             });
 
-        }).async();
+        }).async().enable(true);
 
     };
 });

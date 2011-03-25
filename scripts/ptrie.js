@@ -1,3 +1,5 @@
+
+
 namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     /*
       PackedTrie - Trie traversla of the Trie packed-string representation.
@@ -13,13 +15,16 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         BASE = 36;
 
     ns.extend({
+        'VERSION': '1.1.0r1',
+
         'PackedTrie': PackedTrie,
         'NODE_SEP': NODE_SEP,
         'STRING_SEP': STRING_SEP,
         'TERMINAL_PREFIX': TERMINAL_PREFIX,
         'toAlphaCode': toAlphaCode,
         'fromAlphaCode': fromAlphaCode,
-        'BASE': BASE
+        'BASE': BASE,
+        'beyond': beyond
     });
 
     var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9A-Z]+|$)", 'g');
@@ -43,18 +48,16 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     }
 
     PackedTrie.methods({
+        max: function () {},
+        match: function () {},
+        enumerate: function () {},
+
         isWord: function (word) {
             return this.isFragment(word, 0);
         },
 
         isFragment: function (word, inode) {
-            var node = this.nodes[inode];
-
-            if (word.length == 0) {
-                return node[0] == TERMINAL_PREFIX;
-            }
-
-            var next = this.findNextNode(word, node, inode);
+            var next = this.findNextNode(word, inode);
 
             if (next == undefined) {
                 return false;
@@ -62,40 +65,79 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             if (next.terminal) {
                 return true;
             }
+            if (next.inode == undefined) {
+                return false;
+            }
 
-            return this.isFragment(word.slice(next.prefix.length), inode + next.dnode);
+            return this.isFragment(word.slice(next.prefix.length), next.inode);
+        },
+
+        // Return {inode: number, prefix: string, terminal: boolean}
+        matchPrefix: function (word, inode) {
+            var node = this.nodes[inode];
+            if (word.length == 0) {
+                return {
+                    inode: inode,
+                    prefix: '',
+                    terminal: node[0] == TERMINAL_PREFIX
+                };
+            }
+
+            var next = this.findNextNode(word, inode);
+            if (next == undefined) {
+
+            }
+
+
         },
 
         // Find a prefix of word in the packed node and return:
-        // {dnode: number, terminal: boolean, prefix: string}
+        // {inode: number, terminal: boolean, prefix: string}
         // (or undefined in no word prefix found).
-        findNextNode: function (word, node, inode) {
+        findNextNode: function (word, inode) {
+            var node = this.nodes[inode], match, isTerminal;
+
             if (node[0] == TERMINAL_PREFIX) {
+                if (word.length == 0) {
+                    return {
+                        terminal: true,
+                        prefix: '',
+                        inode: inode
+                    };
+                }
                 node = node.slice(1);
             }
-            var match;
+
+            // Iterate through each pattern (prefix) string in the node
             node.replace(reNodePart, function (w, prefix, ref) {
-                // Already found a match - bail out eventually.
-                if (match) {
+                var common;
+
+                // Quick exit - already matched, or first chars don't match
+                // Note: Because of symbol hoisting, we can have two patterns
+                // with the same initial letter (unlike a strict Trie)
+
+                if (match || prefix[0] != word[0]) {
                     return;
                 }
-                // Match a terminal string - in middle or end of node
-                if (ref == STRING_SEP || ref == '') {
-                    if (prefix == word) {
-                        match = {terminal: true, prefix: prefix};
-                    }
-                    return;
+                if (prefix > word) {
+                    console.log(node, word, prefix);
                 }
-                if (prefix == word.slice(0, prefix.length)) {
-                    match = {terminal: false, prefix: prefix, dnode: fromAlphaCode(ref) + 1};
-                }
+
+                isTerminal = ref == STRING_SEP || ref == '';
+                match = {
+                    terminal: isTerminal && prefix == word,
+                    prefix: prefix,
+                    inode: !isTerminal && prefix == word.slice(0, prefix.length) ?
+                        fromAlphaCode(ref) : undefined
+                };
             });
-            // Found a symbol - convert to dnode
-            if (match && match.dnode != undefined) {
-                if ((match.dnode - 1) < this.symCount) {
-                    match.dnode = this.syms[match.dnode - 1] - inode;
+
+            // Found a symbol
+            if (match && match.inode != undefined) {
+                if (match.inode < this.symCount) {
+                    match.inode = this.syms[match.inode];
                 } else {
-                    match.dnode -= this.symCount;
+                    match.inode += inode + 1 - this.symCount;
                 }
             }
             return match;
@@ -133,6 +175,15 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             n += d * pow;
         }
         return n;
+    }
+
+    // Increment a string one beyond any string with the current prefix
+    function beyond(s) {
+        if (s.length == 0) {
+            return 'a';
+        }
+        var asc = s.charCodeAt(s.length - 1);
+        return s.slice(0, -1) + String.fromCharCode(asc + 1);
     }
 
 });
