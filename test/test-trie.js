@@ -199,10 +199,10 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             var trie = new trieLib.Trie("cat cats dog dogs rat rats hi hit hither");
             var ptrie = new ptrieLib.PackedTrie(trie.pack());
 
-            ut.assertEq(ptrie.match("catjzkd"), ['cat']);
+            ut.assertEq(ptrie.match("catjzkd"), 'cat');
             ut.assertEq(ptrie.match("jzkdy"), undefined);
             ut.assertEq(ptrie.match("jcatzkd"), undefined);
-            ut.assertEq(ptrie.match("hitherandyon"), ['hi', 'hit', 'hither']);
+            ut.assertEq(ptrie.match("hitherandyon"), 'hither');
         });
 
         ts.addTest("PackedTrie enumerate", function (ut) {
@@ -288,7 +288,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 }
             });
 
-        }).async().enable(false);
+        }).async().enable(true);
 
     };
 });

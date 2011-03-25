@@ -61,7 +61,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             if (next == undefined) {
                 return false;
             }
-            if (next.terminal) {
+            if (next.terminal  && next.prefix == word) {
                 return true;
             }
             if (next.inode == undefined) {
@@ -103,40 +103,38 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             var node = this.nodes[inode], match, isTerminal;
 
             if (node[0] == TERMINAL_PREFIX) {
-                if (word.length == 0) {
-                    return {
-                        terminal: true,
-                        prefix: '',
-                        inode: inode
-                    };
-                }
+                isTerminal = true;
                 node = node.slice(1);
             }
 
             // Iterate through each pattern (prefix) string in the node
             node.replace(reNodePart, function (w, prefix, ref) {
-                var common;
+                var common, isTerminal, fullMatch;
 
                 // Quick exit - already matched, or first chars don't match
-                // Note: Because of symbol hoisting, we can have two patterns
-                // with the same initial letter (unlike a strict Trie)
-
                 if (match || prefix[0] != word[0]) {
                     return;
                 }
-                if (prefix > word) {
-                    console.log(node, word, prefix);
-                }
 
                 isTerminal = ref == STRING_SEP || ref == '';
+                fullMatch = prefix == word.slice(0, prefix.length);
+                common = commonPrefix(prefix, word);
+
                 match = {
-                    terminal: isTerminal && prefix == word,
-                    prefix: prefix,
-                    inode: !isTerminal && prefix == word.slice(0, prefix.length) ?
-                        fromAlphaCode(ref) : undefined
+                    terminal: isTerminal && fullMatch,
+                    prefix: common,
+                    inode: !isTerminal && fullMatch ? fromAlphaCode(ref) : undefined
                 };
             });
 
+            // No better match - then return the empty string match at this node
+            if (!match && isTerminal) {
+                return {
+                    terminal: true,
+                    prefix: '',
+                    inode: undefined
+                };
+            }
             // Found a symbol
             if (match && match.inode != undefined) {
                 if (match.inode < this.symCount) {
@@ -189,6 +187,12 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         }
         var asc = s.charCodeAt(s.length - 1);
         return s.slice(0, -1) + String.fromCharCode(asc + 1);
+    }
+
+    function commonPrefix(w1, w2) {
+        var maxlen = Math.min(w1.length, w2.length);
+        for (var i = 0; i < maxlen && w1[i] == w2[i]; i++) {}
+        return w1.slice(0, i);
     }
 
 });
