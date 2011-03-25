@@ -139,30 +139,12 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             return cont;
         },
 
-        // References are either absolute (symbol) or relative (1 - based)
-        inodeFromRef: function (ref, inode) {
-            var dnode = fromAlphaCode(ref);
-            if (dnode < this.symCount) {
-                return this.syms[dnode];
-            }
-            return inode + dnode + 1 - this.symCount;
-        },
-
-        // Increment a string one beyond any string with the current prefix
-        beyond: function (s) {
-            if (s.length == 0) {
-                return this.max();
-            }
-            var asc = s.charCodeAt(s.length - 1);
-            return s.slice(0, -1) + String.fromCharCode(asc + 1);
-        },
-
-
         // Find a prefix of word in the packed node and return the common prefix.
         // {inode: number, terminal: boolean, prefix: string}
         // (or undefined in no word prefix found).
         findNextNode: function (word, inode) {
             var node = this.nodes[inode], match, isTerminal;
+            var self = this;
 
             if (node[0] == TERMINAL_PREFIX) {
                 isTerminal = true;
@@ -185,7 +167,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                 match = {
                     terminal: isTerminal && fullMatch,
                     prefix: common,
-                    inode: !isTerminal && fullMatch ? fromAlphaCode(ref) : undefined
+                    inode: !isTerminal && fullMatch ? self.inodeFromRef(ref, inode) : undefined
                 };
             });
 
@@ -197,16 +179,28 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                     inode: undefined
                 };
             }
-            // Found a symbol
-            if (match && match.inode != undefined) {
-                if (match.inode < this.symCount) {
-                    match.inode = this.syms[match.inode];
-                } else {
-                    match.inode += inode + 1 - this.symCount;
-                }
-            }
+
             return match;
+        },
+
+        // References are either absolute (symbol) or relative (1 - based)
+        inodeFromRef: function (ref, inode) {
+            var dnode = fromAlphaCode(ref);
+            if (dnode < this.symCount) {
+                return this.syms[dnode];
+            }
+            return inode + dnode + 1 - this.symCount;
+        },
+
+        // Increment a string one beyond any string with the current prefix
+        beyond: function (s) {
+            if (s.length == 0) {
+                return this.max();
+            }
+            var asc = s.charCodeAt(s.length - 1);
+            return s.slice(0, -1) + String.fromCharCode(asc + 1);
         }
+
     });
 
     // 0, 1, 2, ..., A, B, C, ..., 00, 01, ... AA, AB, AC, ..., AAA, AAB, ...
