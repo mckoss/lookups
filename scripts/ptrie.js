@@ -16,7 +16,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         MAX_WORD = 'zzzzzzzzzz';
 
     ns.extend({
-        'VERSION': '1.1.0r1',
+        'VERSION': '1.1.0',
 
         'PackedTrie': PackedTrie,
         'NODE_SEP': NODE_SEP,
