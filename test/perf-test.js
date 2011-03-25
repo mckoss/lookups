@@ -15,7 +15,6 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     });
 
     var client;
-    var browser = identifyBrowser();
     var rawDictionary;
     var trie;
     var ptrie;
@@ -149,59 +148,49 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     }
 
     // Try to decode the user agent string into these components:
-    // Browser: Chrome/N.N Firefox/N.N Safari/N.N Opera/N.N
-    // Platform: Win Mac Android Linux iOS
-    function uaDecode(ua) {
+    // browser: Chrome Firefox Safari Opera
+    // platform: Win Mac Android Linux iPhone iPad
+    function agentDecode(ua) {
+        var decoded = {}, version;
 
-    }
+        var tests = [
+            [/iPad.+OS (\d+)_(\d+)/, {platform: 'iPad'}],
+            [/iPhone.+OS (\d+)_(\d+)/, {platform: 'iPhone'}],
+            [/Android (\d+)\.(\d+).*;.*; (.*) Build/, {platform: 'Android'}],
+            [/Android/, {platform: 'Android'}],
+            [/Linux/, {platform: 'Linux'}],
+            [/Mac OS X (\d+)(?:_|.)(\d+)/, {platform: 'Mac'}],
+            [/Windows/, {platform: 'Win'}],
 
-    /**
-     * Extracts the browser name and version number from user agent string.
-     * From: http://odyniec.net/blog/2010/09/decrypting-the-user-agent-string-in-javascript/
-     *
-     * @param userAgent
-     *            The user agent string to parse. If not specified, the contents of
-     *            navigator.userAgent are parsed.
-     * @param elements
-     *            How many elements of the version number should be returned. A
-     *            value of 0 means the whole version. If not specified, defaults to
-     *            2 (major and minor release number).
-     * @return A string containing the browser name and version number, or null if
-     *         the user agent string is unknown.
-     */
-    function identifyBrowser(userAgent, elements) {
-        var regexps = {
-                'Chrome': [ /Chrome\/(\S+)/ ],
-                'Firefox': [ /Firefox\/(\S+)/ ],
-                'MSIE': [ /MSIE (\S+);/ ],
-                'Opera': [
-                    /Opera\/.*?Version\/(\S+)/,     /* Opera 10 */
-                    /Opera\/(\S+)/                  /* Opera 9 and older */
-                ],
-                'Safari': [ /Version\/(\S+).*?Safari\// ]
-            },
-            re, m, browser, version;
+            [/Android.*Version\/(\d+)\.(\d+).+Safari/, {browser: 'Chrome'}],
+            [/Version\/(\d+)\.(\d+).+Safari/, {browser: 'Safari'}],
+            [/Chrome\/(\d+)\.(\d+)/, {browser: 'Chrome'}],
+            [/Firefox\/(\d+)\.(.+) /, {browser: 'Firefox'}],
+            [/MSIE (\d+)\.(\d+)/, {browser: 'IE'}]
+        ];
 
-        if (userAgent === undefined) {
-            userAgent = navigator.userAgent;
-        }
-
-        if (elements === undefined) {
-            elements = 2;
-        } else if (elements === 0) {
-            elements = 1337;
-        }
-
-        for (browser in regexps) {
-            while ((re = regexps[browser].shift())) {
-                if ((m = userAgent.match(re))) {
-                    version = (m[1].match(new RegExp('[^.]+(?:\.[^.]+){0,' + --elements + '}')))[0];
-                    return browser + ' ' + version;
+        for (var i = 0; i < tests.length; i++) {
+            var test = tests[i];
+            var m = test[0].exec(ua);
+            if (!m) {
+                continue;
+            }
+            console.log(ua, m);
+            if (m.length > 1) {
+                m.shift();
+                version = m.join('.');
+            }
+            for (var prop in test[1]) {
+                if (!decoded[prop]) {
+                    decoded[prop] = test[1][prop];
+                    if (version) {
+                        decoded[prop] += '/' + version;
+                    }
                 }
             }
         }
 
-        return null;
+        return decoded;
     }
 
     // Make a row of data for an html table
@@ -243,6 +232,7 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     }
 
     function addResult(result) {
+        base.extendObject(result, agentDecode(result.userAgent));
         $(doc.data).prepend(row(values(result, columnKeys)));
     }
 
@@ -257,7 +247,6 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     function saveResults() {
         var result = {};
 
-        result.browser = browser;
         result.username = client.username || 'anonymous';
         result.userAgent = navigator.userAgent;
         result.date = new Date();
@@ -294,13 +283,14 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         client.saveInterval = 0;
         client.addAppBar();
 
-        $(doc.browser).text(browser);
+        var you = agentDecode(navigator.userAgent);
+        $(doc.browser).text(you.browser + ' on ' + you.platform);
 
-        columnKeys = ['browser', 'username'].concat(mapProp(tasks, 'key')).concat(['userAgent']);
+        columnKeys = ['browser', 'platform', 'username'].concat(mapProp(tasks, 'key'));
 
-        $(doc.headings).append(row(['Browser', 'User'].
-                                   concat(mapProp(tasks, 'key')).
-                                   concat(['User Agent']), 'th'));
+        $(doc.headings).append(row(['Browser', 'Platform', 'User'].
+                                   concat(mapProp(tasks, 'key')),
+                                   'th'));
 
         loadResults();
 
