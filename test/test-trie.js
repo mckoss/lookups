@@ -196,7 +196,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             }
         });
 
-        ts.addTest("PackedTrie match", function(ut) {
+        ts.addTest("PackedTrie.match", function(ut) {
             var trie = new trieLib.Trie("cat cats dog dogs rat rats hi hit hither");
             var ptrie = new ptrieLib.PackedTrie(trie.pack());
 
@@ -206,7 +206,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             ut.assertEq(ptrie.match("hitherandyon"), 'hither');
         });
 
-        ts.addTest("PackedTrie enumerate", function (ut) {
+        ts.addTest("PackedTrie.enumerate (and words)", function (ut) {
             var trie = new trieLib.Trie("cat cats dog dogs rat rats hi hit hither");
             var ptrie = new ptrieLib.PackedTrie(trie.pack());
 

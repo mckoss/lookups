@@ -49,24 +49,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
 
     PackedTrie.methods({
         isWord: function (word) {
-            return this.isFragment(word, 0);
-        },
-
-        // TODO: Replace with call to match
-        isFragment: function (word, inode) {
-            var next = this.findNextNode(word, inode);
-
-            if (next == undefined) {
-                return false;
-            }
-            if (next.terminal  && next.prefix == word) {
-                return true;
-            }
-            if (next.inode == undefined) {
-                return false;
-            }
-
-            return this.isFragment(word.slice(next.prefix.length), next.inode);
+            return this.match(word) == word;
         },
 
         // Return largest matching string in the dictionary
