@@ -115,6 +115,15 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
              next();
          });
 
+    task('ptrie-words', "Generate 1,000 word lists",
+        function (next) {
+             var skip = Math.floor(words.length / 1000);
+             for (var i = 0; i < words.length; i += skip) {
+                 ptrie.words(words[i]);
+             }
+             next();
+        });
+
     task('trie-create', "Create Trie From Full Dictionary",
          function (next) {
              trie = new trieLib.Trie(rawDictionary);
@@ -176,7 +185,6 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
             if (!m) {
                 continue;
             }
-            console.log(ua, m);
             if (m.length > 1) {
                 m.shift();
                 version = m.join('.');
