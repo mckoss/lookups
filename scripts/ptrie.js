@@ -1,5 +1,3 @@
-
-
 namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     /*
       PackedTrie - Trie traversla of the Trie packed-string representation.
@@ -9,6 +7,8 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
           ptrie = new PackedTrie(<string> compressed);
           bool = ptrie.isWord(word)
     */
+    var funcs = namespace.lookup('org.startpad.funcs');
+
     var NODE_SEP = ';',
         STRING_SEP = ',',
         TERMINAL_PREFIX = '!',
@@ -47,7 +47,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         }
     }
 
-    PackedTrie.methods({
+    funcs.methods(PackedTrie, {
         isWord: function (word) {
             return this.match(word) == word;
         },
