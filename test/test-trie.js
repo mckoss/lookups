@@ -288,7 +288,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 }
             });
 
-        }).async().enable(true);
+        }).async().enable(false);
 
     };
 });

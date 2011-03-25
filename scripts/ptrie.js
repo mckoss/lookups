@@ -49,7 +49,6 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
 
     PackedTrie.methods({
         max: function () {},
-        match: function () {},
         enumerate: function () {},
 
         isWord: function (word) {
@@ -72,23 +71,29 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             return this.isFragment(word.slice(next.prefix.length), next.inode);
         },
 
-        // Return {inode: number, prefix: string, terminal: boolean}
-        matchPrefix: function (word, inode) {
-            var node = this.nodes[inode];
-            if (word.length == 0) {
-                return {
-                    inode: inode,
-                    prefix: '',
-                    terminal: node[0] == TERMINAL_PREFIX
-                };
+        // Return largest matching string in the dictionary
+        match: function (word, inode) {
+            if (inode == undefined) {
+                inode = 0;
             }
-
             var next = this.findNextNode(word, inode);
-            if (next == undefined) {
 
+            if (next == undefined) {
+                return undefined;
+            }
+            if (next && next.terminal) {
+                return next.prefix;
             }
 
-
+            if (next.inode != undefined) {
+                var suffix = this.match(word.slice(next.prefix.length), next.inode);
+                if (suffix != undefined) {
+                    return next.prefix + suffix;
+                }
+                if (this.nodes[inode][0] == TERMINAL_PREFIX) {
+                    return '';
+                }
+            }
         },
 
         // Find a prefix of word in the packed node and return:
