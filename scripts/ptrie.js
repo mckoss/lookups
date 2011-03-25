@@ -16,7 +16,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         MAX_WORD = 'zzzzzzzzzz';
 
     ns.extend({
-        'VERSION': '1.1.0',
+        'VERSION': '1.2.0r1',
 
         'PackedTrie': PackedTrie,
         'NODE_SEP': NODE_SEP,
@@ -81,11 +81,22 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             return MAX_WORD;
         },
 
+
+        // words() - return all strings in dictionary - same as words('')
+        // words(string) - return all words with prefix
+        // words(string, limit) - limited number of words
+        // words(string, beyond) - max (alphabetical) word
+        // words(string, beyond, limit)
         words: function (from, beyond, limit) {
             var words = [];
 
             if (from == undefined) {
                 from = '';
+            }
+
+            if (typeof beyond == 'number') {
+                limit = beyond;
+                beyond = undefined;
             }
 
             // By default list all words with 'from' as prefix

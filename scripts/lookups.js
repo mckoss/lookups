@@ -34,13 +34,19 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
                          " (dictionary length: " + format.thousands(dict.length) + ")");
     }
 
-    function testWord() {
-        var word = $(doc.word).val();
-        if (ptrie.isWord($(doc.word).val())) {
-            $(doc.result).text(word + " is in Trie!");
-        } else {
-            $(doc.result).text(word + " is not in the Trie.");
+    function makePrefixes() {
+        if (!ptrie) {
+            $(doc.result).text("Click Build Trie to Generate Prefixes");
+            return;
         }
+
+        var word = $(doc.word).val();
+
+        var msStart = new Date().getTime();
+        var words = ptrie.words(word, 100);
+        var ms = new Date().getTime() - msStart;
+        $(doc.result).text(words.join(', '));
+        $(doc.timing).text("Total time: " + format.thousands(ms) + " ms");
     }
 
     function loadDict() {
@@ -71,7 +77,7 @@ namespace.lookup('com.pageforest.lookups').defineOnce(function(ns) {
         client.addAppBar();
 
         $(doc.build).click(onBuild);
-        $(doc.test).click(testWord);
+        $(doc.word).bind('keyup', makePrefixes);
         $(doc.load).click(loadDict);
     }
 
