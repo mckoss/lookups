@@ -12,7 +12,8 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     var NODE_SEP = ';',
         STRING_SEP = ',',
         TERMINAL_PREFIX = '!',
-        BASE = 36;
+        BASE = 36,
+        MAX_WORD = 'zzzzzzzzzz';
 
     ns.extend({
         'VERSION': '1.1.0r1',
@@ -23,8 +24,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         'TERMINAL_PREFIX': TERMINAL_PREFIX,
         'toAlphaCode': toAlphaCode,
         'fromAlphaCode': fromAlphaCode,
-        'BASE': BASE,
-        'beyond': beyond
+        'BASE': BASE
     });
 
     var reNodePart = new RegExp("([a-z]+)(" + STRING_SEP + "|[0-9A-Z]+|$)", 'g');
@@ -48,13 +48,11 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     }
 
     PackedTrie.methods({
-        max: function () {},
-        enumerate: function () {},
-
         isWord: function (word) {
             return this.isFragment(word, 0);
         },
 
+        // TODO: Replace with call to match
         isFragment: function (word, inode) {
             var next = this.findNextNode(word, inode);
 
@@ -96,7 +94,86 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             }
         },
 
-        // Find a prefix of word in the packed node and return:
+        max: function () {
+            return MAX_WORD;
+        },
+
+        words: function (from, beyond, limit) {
+            var words = [];
+
+            if (from == undefined) {
+                from = '';
+            }
+
+            // By default list all words with 'from' as prefix
+            if (beyond == undefined) {
+                beyond = this.beyond(from);
+            }
+
+            function catchWords(word) {
+                words.push(word);
+                if (limit && limit >= list.length) {
+                    return true;
+                }
+            }
+
+            this.enumerate(from, beyond, catchWords, 0, '');
+
+            return words;
+        },
+
+        enumerate: function (from, beyond, fn, inode, prefix) {
+            var node = this.nodes[inode], cont = true;
+            var self = this;
+
+            if (node[0] == TERMINAL_PREFIX) {
+                if (from == '' && fn(prefix)) {
+                    return;
+                }
+                node = node.slice(1);
+            }
+
+            node.replace(reNodePart, function (w, str, ref) {
+                var isTerminal, fullMatch, inode,
+                    match = prefix + str;
+
+                // Ignore strings outside our enumeration scope
+                if (cont && (match < from || match >= beyond)) {
+                    return;
+                }
+
+                isTerminal = ref == STRING_SEP || ref == '';
+
+                if (isTerminal) {
+                    if (!fn(match)) {
+                        cont = false;
+                    }
+                    return;
+                }
+
+                this.enumerate(from, beyond, fn, self.inodeFromRef(ref), match);
+            });
+        },
+
+        // References are either absolute (symbol) or relative (1 - based)
+        inodeFromRef: function (ref, inode) {
+            var dnode = fromAlphaCode(ref);
+            if (dnode < this.symCount) {
+                return this.syms[dnode];
+            }
+            return inode + dnode + 1 - this.symCount;
+        },
+
+        // Increment a string one beyond any string with the current prefix
+        beyond: function (s) {
+            if (s.length == 0) {
+                return this.max();
+            }
+            var asc = s.charCodeAt(s.length - 1);
+            return s.slice(0, -1) + String.fromCharCode(asc + 1);
+        },
+
+        // Find a prefix of word in the packed node and return the common prefix.
         // {inode: number, terminal: boolean, prefix: string}
         // (or undefined in no word prefix found).
         findNextNode: function (word, inode) {
@@ -178,15 +255,6 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
             n += d * pow;
         }
         return n;
-    }
-
-    // Increment a string one beyond any string with the current prefix
-    function beyond(s) {
-        if (s.length == 0) {
-            return 'a';
-        }
-        var asc = s.charCodeAt(s.length - 1);
-        return s.slice(0, -1) + String.fromCharCode(asc + 1);
     }
 
     function commonPrefix(w1, w2) {

@@ -209,16 +209,16 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             var trie = new trieLib.Trie("cat cats dog dogs rat rats hi hit hither");
             var ptrie = new ptrieLib.PackedTrie(trie.pack());
 
-            ut.assertEq(ptrie.max(), 'ratt');
-            ut.assertEq(ptrieLib.beyond('foobar'), 'foobas');
-            ut.assertEq(ptrieLib.beyond(''), 'a');
-            ut.assertEq(ptrieLib.beyond('z'), '{');
+            ut.assert(ptrie.max() > 'rats');
+            ut.assertEq(ptrie.beyond('foobar'), 'foobas');
+            ut.assertEq(ptrie.beyond(''), ptrie.max());
+            ut.assertEq(ptrie.beyond('z'), '{');
 
             ut.assertEq(ptrie.enumerate(), ['cat', 'cats', 'dog', 'dogs',
                                             'hi', 'hit', 'hither', 'rat', 'rats']);
             ut.assertEq(ptrie.enumerate('c'), ['cat', 'cats']);
             ut.assertEq(ptrie.enumerate('cat'), ['cats']);
-            ut.assertEq(ptrie.enumerate('ca', ptrieLib.beyond('cats')), ['cat', 'cats']);
+            ut.assertEq(ptrie.enumerate('ca', ptrie.beyond('cats')), ['cat', 'cats']);
             ut.assertEq(ptrie.enumerate('', 'cats'), ['cat']);
             ut.assertEq(ptrie.enumerate('c', 'e'), ['cat', 'cats', 'dog', 'dogs']);
             ut.assertEq(ptrie.enumerate('hi', 'hj'));
