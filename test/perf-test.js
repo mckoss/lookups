@@ -24,40 +24,45 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
     var columnKeys;
     var doc;                            // Bound elements here
     var seq = 1;
+
     var DOCID = 'perf-test';
     var BLOBID = 'results-4';
-
-    function handleAppCache() {
-        if (typeof applicationCache == 'undefined') {
-            return;
-        }
-
-        if (applicationCache.status == applicationCache.UPDATEREADY) {
-            applicationCache.swapCache();
-            location.reload();
-            return;
-        }
-
-        applicationCache.addEventListener('updateready', handleAppCache, false);
-    }
+    var MAXTIME = 12000;
 
     function log(s) {
         $(doc.log).append('<li>' + s + '</li>');
     }
 
     function timedTasks(tasks, fn) {
-        var iNext = 0, msStart;
+        var iNext = 0, msStart, idWatch, iLast;
 
         seq++;
 
+        // Detect JavaScript execution exceeded timeout
+        function watcher() {
+            if (iNext === iLast) {
+                msStart = "TIMEOUT";
+                next();
+            }
+            iLast = iNext;
+        }
+
         function next() {
+            var time, task, disp;
+
             if (iNext != 0) {
-                var time = new Date().getTime() - msStart;
+                if (typeof msStart == 'string') {
+                    time = disp = msStart;
+                } else {
+                    time = new Date().getTime() - msStart;
+                    disp = format.thousands(time) + ' ms';
+                }
                 task = tasks[iNext - 1];
                 task.time = time;
-                $('#time-' + task.key + seq).text('(' + format.thousands(time) + ' ms)');
+                $('#time-' + task.key + seq).text('(' + disp + ')');
             }
             if (iNext >= tasks.length) {
+                clearInterval(idWatch);
                 fn();
                 return;
             }
@@ -69,13 +74,13 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
                 try {
                     task.fn(next);
                 } catch (e) {
-                    task.time = "NA";
-                    $('#time-' + task.key).text('NA - ' + e.message);
-                    log("Tests terminated.");
+                    msStart = "N/A";
+                    next();
                 }
             }, 0);
         }
 
+        idWatch = setInterval(watcher, MAXTIME);
         next();
     }
 
@@ -143,6 +148,12 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         $(doc['signin'])[username ? 'hide' : 'show']();
     }
 
+    // Try to decode the user agent string into these components:
+    // Browser: Chrome/N.N Firefox/N.N Safari/N.N Opera/N.N
+    // Platform: Win Mac Android Linux iOS
+    function uaDecode(ua) {
+
+    }
 
     /**
      * Extracts the browser name and version number from user agent string.
@@ -231,10 +242,14 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         return result;
     }
 
+    function addResult(result) {
+        $(doc.data).prepend(row(values(result, columnKeys)));
+    }
+
     function loadResults() {
         client.storage.getBlob(DOCID, BLOBID, undefined, function (results) {
             for (var i = 0; i < results.length; i++) {
-                $(doc.data).prepend(row(values(results[i], columnKeys)));
+                addResult(results[i]);
             }
         });
     }
@@ -254,8 +269,22 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
 
         client.storage.push(DOCID, BLOBID, result, undefined, function() {
             log("Results Saved");
-            $(doc.data).prepend(row(values(result, columnKeys)));
+            addResult(result);
         });
+    }
+
+    function handleAppCache() {
+        if (typeof applicationCache == 'undefined') {
+            return;
+        }
+
+        if (applicationCache.status == applicationCache.UPDATEREADY) {
+            applicationCache.swapCache();
+            location.reload();
+            return;
+        }
+
+        applicationCache.addEventListener('updateready', handleAppCache, false);
     }
 
     function onReady() {
@@ -267,9 +296,11 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
 
         $(doc.browser).text(browser);
 
-        columnKeys = ['browser', 'username'].concat(mapProp(tasks, 'key'));
+        columnKeys = ['browser', 'username'].concat(mapProp(tasks, 'key')).concat(['userAgent']);
 
-        $(doc.headings).append(row(['Browser', 'User'].concat(mapProp(tasks, 'key')), 'th'));
+        $(doc.headings).append(row(['Browser', 'User'].
+                                   concat(mapProp(tasks, 'key')).
+                                   concat(['User Agent']), 'th'));
 
         loadResults();
 
