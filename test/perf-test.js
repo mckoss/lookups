@@ -156,7 +156,7 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
         var tests = [
             [/iPad.+OS (\d+)_(\d+)/, {platform: 'iPad'}],
             [/iPhone.+OS (\d+)_(\d+)/, {platform: 'iPhone'}],
-            [/Android (\d+)\.(\d+).*;.*; (.*) Build/, {platform: 'Android'}],
+            [/Android (\d+)\.(\d+).* (\S+ \S+) Build/, {platform: 'Android'}],
             [/Android/, {platform: 'Android'}],
             [/Linux/, {platform: 'Linux'}],
             [/Mac OS X (\d+)(?:_|.)(\d+)/, {platform: 'Mac'}],
@@ -165,7 +165,8 @@ namespace.lookup('com.pageforest.trie.packed.test.perf').defineOnce(function(ns)
             [/Android.*Version\/(\d+)\.(\d+).+Safari/, {browser: 'Chrome'}],
             [/Version\/(\d+)\.(\d+).+Safari/, {browser: 'Safari'}],
             [/Chrome\/(\d+)\.(\d+)/, {browser: 'Chrome'}],
-            [/Firefox\/(\d+)\.(.+) /, {browser: 'Firefox'}],
+            [/Firefox\/(\d+)\.([0-9b]+)/, {browser: 'Firefox'}],
+            [/Prism\/(\d+)\.([0-9b]+)/, {browser: 'Prism'}],
             [/MSIE (\d+)\.(\d+)/, {browser: 'IE'}]
         ];
 
