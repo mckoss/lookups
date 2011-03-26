@@ -281,7 +281,7 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
                 }
             });
 
-        }).async().enable(false);
+        }).async().enable(true);
 
     };
 });

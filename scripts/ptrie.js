@@ -101,7 +101,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                     this.abort = true;
                     return;
                 }
-                words.unshift(word);
+                words.push(word);
             }
 
             this.enumerate(0, '',
@@ -110,7 +110,6 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                             fn: catchWords,
                             prefixes: from + 'a' == beyond
                            });
-
             return words;
         },
 
@@ -135,7 +134,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                     return;
                 }
                 if (ctx.from <= word && word < ctx.beyond) {
-                    ctx.fn(prefix);
+                    ctx.fn(word);
                 }
             }
 
