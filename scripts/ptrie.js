@@ -16,7 +16,7 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
         MAX_WORD = 'zzzzzzzzzz';
 
     ns.extend({
-        'VERSION': '1.2.0r1',
+        'VERSION': '1.3.0r1',
 
         'PackedTrie': PackedTrie,
         'NODE_SEP': NODE_SEP,
@@ -49,38 +49,30 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
 
     funcs.methods(PackedTrie, {
         isWord: function (word) {
+            if (word == '') {
+                return false;
+            }
             return this.match(word) == word;
         },
 
-        // Return largest matching string in the dictionary
-        match: function (word, inode) {
-            if (inode == undefined) {
-                inode = 0;
+        // Return largest matching string in the dictionary (or '')
+        match: function (word) {
+            var matches = this.matches(word);
+            if (matches.length == 0) {
+                return '';
             }
-            var next = this.findNextNode(word, inode);
-
-            if (next == undefined) {
-                return undefined;
-            }
-            if (next && next.terminal) {
-                return next.prefix;
-            }
-
-            if (next.inode != undefined) {
-                var suffix = this.match(word.slice(next.prefix.length), next.inode);
-                if (suffix != undefined) {
-                    return next.prefix + suffix;
-                }
-                if (this.nodes[inode][0] == TERMINAL_PREFIX) {
-                    return '';
-                }
-            }
+            return matches[matches.length - 1];
         },
 
+        // Return array of all the prefix matches in the dictionary
+        matches: function (word) {
+            return this.words(word, word + 'a');
+        },
+
+        // Largest possible word in the dictionary - hard coded for now
         max: function () {
             return MAX_WORD;
         },
-
 
         // words() - return all strings in dictionary - same as words('')
         // words(string) - return all words with prefix
@@ -106,23 +98,51 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
 
             function catchWords(word) {
                 if (words.length >= limit) {
-                    return true;
+                    this.abort = true;
+                    return;
                 }
-                words.push(word);
+                words.unshift(word);
             }
 
-            this.enumerate(from, beyond, catchWords, 0, '');
+            this.enumerate(0, '',
+                           {from: from,
+                            beyond: beyond,
+                            fn: catchWords,
+                            prefixes: from + 'a' == beyond
+                           });
 
             return words;
         },
 
-        enumerate: function (from, beyond, fn, inode, prefix) {
+        // Enumerate words in dictionary.  Two modes:
+        //
+        // ctx.prefixes: Just enumerate terminal strings that are
+        // prefixes of 'from'.
+        //
+        // !ctx.prefixes: Enumerate all words s.t.:
+        //
+        //    ctx.from <= word < ctx.beyond
+        //
+        enumerate: function (inode, prefix, ctx) {
             var node = this.nodes[inode], cont = true;
             var self = this;
 
+            function emit(word) {
+                if (ctx.prefixes) {
+                    if (word == ctx.from.slice(0, word.length)) {
+                        ctx.fn(word);
+                    }
+                    return;
+                }
+                if (ctx.from <= word && word < ctx.beyond) {
+                    ctx.fn(prefix);
+                }
+            }
+
             if (node[0] == TERMINAL_PREFIX) {
-                if (from <= prefix && prefix < beyond && fn(prefix)) {
-                    return false;
+                emit(prefix);
+                if (ctx.abort) {
+                    return;
                 }
                 node = node.slice(1);
             }
@@ -131,67 +151,21 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
                 var match = prefix + str;
 
                 // Done or no possible future match from str
-                if (!cont || match >= beyond || match < from.slice(0, match.length)) {
+                if (ctx.abort ||
+                    match >= ctx.beyond ||
+                    match < ctx.from.slice(0, match.length)) {
                     return;
                 }
 
                 var isTerminal = ref == STRING_SEP || ref == '';
 
                 if (isTerminal) {
-                    if (from <= match && match < beyond && fn(match)) {
-                        cont = false;
-                    }
+                    emit(match);
                     return;
                 }
 
-                cont = self.enumerate(from, beyond, fn, self.inodeFromRef(ref, inode), match);
+                self.enumerate(self.inodeFromRef(ref, inode), match, ctx);
             });
-
-            return cont;
-        },
-
-        // Find a prefix of word in the packed node and return the common prefix.
-        // {inode: number, terminal: boolean, prefix: string}
-        // (or undefined in no word prefix found).
-        findNextNode: function (word, inode) {
-            var node = this.nodes[inode], match, isTerminal;
-            var self = this;
-
-            if (node[0] == TERMINAL_PREFIX) {
-                isTerminal = true;
-                node = node.slice(1);
-            }
-
-            // Iterate through each pattern (prefix) string in the node
-            node.replace(reNodePart, function (w, prefix, ref) {
-                var common, isTerminal, fullMatch;
-
-                // Quick exit - already matched, or first chars don't match
-                if (match || prefix[0] != word[0]) {
-                    return;
-                }
-
-                isTerminal = ref == STRING_SEP || ref == '';
-                fullMatch = prefix == word.slice(0, prefix.length);
-                common = commonPrefix(prefix, word);
-
-                match = {
-                    terminal: isTerminal && fullMatch,
-                    prefix: common,
-                    inode: !isTerminal && fullMatch ? self.inodeFromRef(ref, inode) : undefined
-                };
-            });
-
-            // No better match - then return the empty string match at this node
-            if (!match && isTerminal) {
-                return {
-                    terminal: true,
-                    prefix: '',
-                    inode: undefined
-                };
-            }
-
-            return match;
         },
 
         // References are either absolute (symbol) or relative (1 - based)

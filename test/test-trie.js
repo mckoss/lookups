@@ -201,8 +201,8 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             var ptrie = new ptrieLib.PackedTrie(trie.pack());
 
             ut.assertEq(ptrie.match("catjzkd"), 'cat');
-            ut.assertEq(ptrie.match("jzkdy"), undefined);
-            ut.assertEq(ptrie.match("jcatzkd"), undefined);
+            ut.assertEq(ptrie.match("jzkdy"), '');
+            ut.assertEq(ptrie.match("jcatzkd"), '');
             ut.assertEq(ptrie.match("hitherandyon"), 'hither');
         });
 
