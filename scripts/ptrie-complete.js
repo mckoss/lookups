@@ -172,7 +172,11 @@ namespace.lookup('org.startpad.trie.packed').define(function (ns) {
       Usage:
 
           ptrie = new PackedTrie(<string> compressed);
-          bool = ptrie.isWord(word)
+          bool = ptrie.isWord(word);
+          longestWord = ptrie.match(string);
+          matchArray = ptrie.matches(string);
+          wordArray = ptrie.words(from, beyond, limit);
+          ptrie.enumerate(inode, prefix, context);
     */
     var funcs = namespace.lookup('org.startpad.funcs');
 
