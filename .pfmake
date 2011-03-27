@@ -1,0 +1,11 @@
+{
+  "files": {
+    "scripts/ptrie-complete.js": [
+      "scripts/namespace.js",
+      "scripts/type.js",
+      "scripts/funcs.js",
+      "scripts/ptrie.js"
+    ]
+  },
+  "uploadIndividualFiles": false
+}
