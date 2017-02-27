@@ -227,6 +227,21 @@ namespace.lookup('org.startpad.trie.test').defineOnce(function (ns) {
             ut.assertEq(ptrie.words('c', 'e', 2), ['cat', 'cats']);
         });
 
+      // Regression test.
+      ts.addTest("Issue #8", function(ut) {
+        var names = "brian bruce bryan bryant bryce bryon buddy burton byron caleb calvin carlo carlton " +
+            "carroll cedric cesar cha charle charli chester chri christian christopher chuck clarence " +
+            "clark clay clayton damian damien damon daniel danny darin dariu darwin dav davi david " +
+            "dean dejan deni denni derek derrick devin deven dewayne dewey";
+        var trie = new trieLib.Trie(names);
+        trie.optimize();
+        ut.assert(trie.isWord("dejan"));
+
+        var pack = trie.pack();
+        var ptrie = new ptrieLib.PackedTrie(pack);
+        ut.assert(ptrie.isWord("dejan"));
+      });
+
         ts.addTest("Big Dict", function(ut) {
             var word, i, trie, ptrie, pack;
             var words = ['almond', 'almonds', 'as', 'the', 'and',

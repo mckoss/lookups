@@ -1,3 +1,4 @@
+/* Source: scripts/namespace.js */
 /* Namespace.js - modular namespaces in JavaScript
 
    by Mike Koss - placed in the public domain, March 18, 2011
@@ -42,6 +43,7 @@ this['namespace'] = (function() {
 
     return globalNamespace;
 }());
+/* Source: scripts/type.js */
 namespace.lookup('org.startpad.types').define(function (ns) {
     ns.extend({
         'isArguments': function (obj) { return isType('Array'); },
@@ -58,6 +60,7 @@ namespace.lookup('org.startpad.types').define(function (ns) {
         return toString(obj) == '[object ' + type + ']';
     }
 });
+/* Source: scripts/funcs.js */
 namespace.lookup('org.startpad.funcs').define(function (ns) {
     var types = namespace.lookup('org.startpad.types');
 
@@ -165,6 +168,7 @@ namespace.lookup('org.startpad.funcs').define(function (ns) {
     }
 
 });
+/* Source: scripts/ptrie.js */
 namespace.lookup('org.startpad.trie.packed').define(function (ns) {
     /*
       PackedTrie - Trie traversla of the Trie packed-string representation.

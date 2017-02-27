@@ -364,6 +364,7 @@ namespace.lookup('org.startpad.trie').define(function (ns) {
                     if (node[prop]._g && ref.length >= node[prop]._g.length &&
                         node[node[prop]._g] == 1) {
                         ref = node[prop]._g;
+                        line += sep + prop + ref;
                         sep = ptrie.STRING_SEP;
                         continue;
                     }
