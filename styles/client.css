@@ -1,0 +1,170 @@
+/* Begin file: appbar.css */
+#pfAppBar {
+    width: 100%;
+    height: 35px;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+#pfAppBarBox {
+    font-family: Verdana, Arial, san-serif;
+    font-size: 14px;
+    float: right;
+    margin-right: 16px;
+    display: inline;
+    height: 35px;
+    position: relative;
+    z-index: 999;
+    x-white-space: nowrap;
+}
+
+div.pfLeft {
+    background: url(/static/images/appbar/green-left.png) no-repeat scroll;
+    float: left;
+    width: 5px;
+    height: 35px;
+    margin: 0px;
+}
+
+div.pfCenter {
+    background: url(/static/images/appbar/green-center.png) repeat-x scroll top;
+    float: left;
+    display: inline;
+    height: 35px;
+    margin: 0px;
+}
+
+div.pfRight {
+    background: url(/static/images/appbar/green-right.png) no-repeat top right scroll;
+    float: left;
+    width: 5px;
+    height: 35px;
+    margin: 0px;
+}
+
+#pfAppBar span {
+    color: #464646;
+    line-height: 35px;
+    padding: 4px;
+}
+
+#pfAppBar span.pfLink:hover {
+    color: #000000;
+    background-color: #D2E6B3;
+    cursor: pointer;
+}
+
+#pfAppBar span.pfLink.disabled {
+    color: #888F7D;
+}
+
+#pfLogo {
+    background: url(/static/images/appbar/logo.png) no-repeat top right scroll;
+    border: 0;
+    float: right;
+    width: 124px;
+    height: 35px;
+}
+
+#pfLogo:hover {
+    background: url(/static/images/appbar/logo-highlight.png) no-repeat top right scroll;
+    cursor: pointer;
+}
+
+#pfAppPanel {
+    width: 360px;
+    padding: 10px 5px 10px 5px;
+    position: absolute;
+    display: none;
+    background-color: #C6DDA3;
+    border: 2px solid;
+    border-color: #E7F2D7 #749B45 #749B45 #E7F2D7;
+    font-size: 14px;
+    z-index: 997;
+}
+
+div.expander {
+    display: inline-block;
+    width: 13px;
+    height: 12px;
+    margin: 0 6px 0 3px;
+    cursor: pointer;
+}
+
+div.expanded {
+    background: url(/static/images/appbar/up.png) scroll top;
+}
+
+div.collapsed {
+    background: url(/static/images/appbar/down.png) scroll top;
+}
+
+#pfErrorPanel {
+    width: 360px;
+    padding: 10px 5px 10px 5px;
+    position: absolute;
+    display: none;
+    color: #701818;
+    background-color: #DDA8A3;
+    border: 2px solid;
+    border-color: #F2D5D3 #A06560 #A06560 #F2D5D3;
+    z-index: 998;
+    font-size: 16px;
+}
+/* Begin file: dialog.css */
+div.SP_Dialog {
+    width: 350px;
+}
+
+div.SP_Dialog * {
+    font-size: inherit;
+}
+
+div.SP_Dialog label.left {
+    display: block;
+    float: left;
+    clear: left;
+    text-align: right;
+    width: 94px;
+    margin: 1px 0 6px 0;
+    padding-right: 5px;
+}
+
+div.SP_Dialog label.checkbox, div.SP_Dialog input[type=checkbox] {
+    cursor: pointer;
+    margin-left: 0;
+}
+
+div.SP_Dialog label.checkbox {
+    display: block;
+    clear: left;
+    margin: 0 5px 6px 100px;
+    padding: 0;
+}
+
+div.SP_Dialog input[type=text], div.SP_Dialog input[type=password], div.SP_Dialog .value,
+div.SP_Dialog textarea
+{
+    float: left;
+    width: 245px;
+    margin: 0 0 6px 0;
+    padding: 0;
+}
+
+div.SP_Dialog {
+    position: relative;
+}
+
+div.SP_Dialog .message {
+    text-align: center;
+    font-style: italic;
+    margin: 0 5px 6px 5px;
+}
+
+div.SP_Dialog input[type=button] {
+    clear: left;
+    float: right;
+    margin: 3px;
+    cursor: pointer;
+}
