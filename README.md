@@ -1,4 +1,18 @@
-Exploration of different dictionary lookup techniques for
+# This repository is DEPRECATED
+
+This library has been ported to TypeScript here:
+
+https://github.com/mckoss/dawg
+
+The new library can also be installed via:
+
+```
+npm install dawg-lookup
+```
+
+All future Issues and development should be directed there.
+
+# Exploration of different dictionary lookup techniques for
 client-side JavaScript.
 
 Inspired by several blog posts by John Resig:
